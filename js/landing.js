@@ -1,4 +1,4 @@
-/* Me Too — landing: live 3×3 heat preview fed from the store. */
+/* dout — landing: live 3×3 heat preview fed from the store. */
 (function () {
   var store = window.MeTooStore;
   var ui = window.MeTooUI;

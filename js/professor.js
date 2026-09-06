@@ -1,4 +1,4 @@
-/* Me Too — professor: per-subject gate + dashboard.
+/* dout — professor: per-subject gate + dashboard.
    A professor picks their subject and types its name as the password. The session remembers
    which subject was unlocked, never a blanket "logged in", so the dashboard can only ever
    show the one class that key opens. */
@@ -37,7 +37,7 @@
       /* Locking has to take the subject out of the tab title too. Leaving "BI 130" up there
          after the dashboard is closed tells the next person at the machine which class this
          key opens, which is the one thing locking was supposed to put away. */
-      document.title = 'Me Too — For professors';
+      document.title = 'dout — For professors';
       if (moveFocus && gateSelect) gateSelect.focus();
     }
   }
@@ -92,7 +92,7 @@
 
   function render() {
     var meta = store.getMeta();
-    document.title = 'Me Too — ' + meta.title;
+    document.title = 'dout — ' + meta.title;
     document.getElementById('course').textContent = meta.code + ' · ' + meta.professor;
     document.getElementById('dash-title').textContent = meta.name;
 

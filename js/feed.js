@@ -1,4 +1,4 @@
-/* Me Too — feed: subject picker, then one subject's board (composer, filters, heat tiles, Me too). */
+/* dout — feed: subject picker, then one subject's board (composer, filters, heat tiles, Me too). */
 (function () {
   var store = window.MeTooStore;
   var ui = window.MeTooUI;
@@ -349,7 +349,7 @@
     noticeEl = document.getElementById('storage-note');
 
     var meta = store.getMeta();
-    document.title = 'Me Too — ' + meta.title;
+    document.title = 'dout — ' + meta.title;
     document.getElementById('course').textContent = meta.code + ' · ' + meta.professor;
     document.getElementById('subject-title').textContent = meta.name;
     document.getElementById('lock-note').innerHTML = ui.icons.lock + '<span>No name attached</span>';

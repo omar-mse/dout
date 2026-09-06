@@ -1,4 +1,4 @@
-/* Me Too — local store
+/* dout — local store
    Everything lives in this browser's localStorage under one key.
    The board is split by subject: five subjects, each with its own doubts and its own
    me too record. Seeded on first load so judges see live boards immediately.

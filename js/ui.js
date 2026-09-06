@@ -1,4 +1,4 @@
-/* Me Too — shared chrome: nav, theme popover, icons, toast. */
+/* dout — shared chrome: nav, theme popover, icons, toast. */
 (function () {
   var ICONS = {
     hand: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v2"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></svg>',
@@ -198,7 +198,7 @@
   }
 
   function renderFooter() {
-    return '<div class="footer"><div>Me Too · DesignAthon 2026</div>' +
+    return '<div class="footer"><div>dout · DesignAthon 2026</div>' +
       '<nav aria-label="Footer"><ul>' +
       LINKS.map(function (l) { return '<li><a href="' + l.href + '">' + esc(l.label) + '</a></li>'; }).join('') +
       '</ul></nav></div>';
@@ -216,6 +216,6 @@
     /* The links, the brand and the Ask button are plain markup and work regardless. Only the
        popover and the menu need wiring, so a failure there must not take the page with it. */
     try { wireNav(nav); }
-    catch (e) { if (window.console && console.error) console.error('Me Too: nav controls unavailable', e); }
+    catch (e) { if (window.console && console.error) console.error('dout: nav controls unavailable', e); }
   });
 })();

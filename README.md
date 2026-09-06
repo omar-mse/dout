@@ -1,4 +1,4 @@
-# Me Too
+# dout
 
 Students ask their professor anonymously. Classmates tap **Me too**. The count breaks pluralistic ignorance: the private belief that you are the only one who did not get it.
 

@@ -1,4 +1,4 @@
-/* Me Too — theme (palette + dark mode)
+/* dout — theme (palette + dark mode)
    Loaded synchronously in <head> so the stored choice applies before first paint. */
 (function () {
   var PALETTES = [

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en" data-palette="blue" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Me Too — Live feed</title>
+  <meta name="description" content="Pick your subject and ask your professor anonymously. Tap Me too on the doubts you share. The grid shows where the subject lost people.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0b'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ffe14d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/theme.js"></script>
+</head>
+<body data-page="feed">
+  <header class="nav"></header>
+
+  <main id="main" class="container" tabindex="-1">
+
+    <!-- Subject picker: the first thing Feed shows. One card per subject, each carrying its
+         own live reading, so choosing a board is also a glance at where the week is stuck. -->
+    <section id="picker" hidden aria-labelledby="picker-title">
+      <div class="page-head">
+        <div>
+          <span class="kicker">Live feed</span>
+          <h1 id="picker-title" tabindex="-1">Pick your subject.</h1>
+        </div>
+      </div>
+      <p class="picker__lede">Every subject has its own board. Open yours to read what the room is stuck on, or to add the thing you did not get.</p>
+      <p class="picker__cue" id="picker-cue" hidden></p>
+      <div class="subjects" id="subjects"></div>
+      <p class="note-line" id="picker-note"></p>
+    </section>
+
+    <!-- One subject's board. Everything below is scoped to the subject in the URL. -->
+    <section id="board" hidden>
+      <div class="page-head">
+        <div>
+          <a class="backlink" href="feed.html"><span aria-hidden="true">←</span> All subjects</a>
+          <span class="kicker" id="course"></span>
+          <h1 id="subject-title" tabindex="-1"></h1>
+        </div>
+        <div class="filters" role="radiogroup" aria-label="Sort and filter doubts">
+          <button type="button" class="filters__btn" role="radio" data-filter="top" aria-checked="true">Most me too</button>
+          <button type="button" class="filters__btn" role="radio" data-filter="new" aria-checked="false" tabindex="-1">Newest</button>
+          <button type="button" class="filters__btn" role="radio" data-filter="answered" aria-checked="false" tabindex="-1">Answered</button>
+        </div>
+      </div>
+
+      <aside class="hint" id="hint" hidden></aside>
+
+      <form class="composer" id="ask" autocomplete="off">
+        <div class="composer__field">
+          <label class="sr-only" for="doubt">Your doubt</label>
+          <textarea class="composer__input" id="doubt" name="doubt" rows="2" maxlength="240" dir="auto" placeholder="Type the thing you did not get_" required aria-describedby="lock-note"></textarea>
+          <div class="composer__meta">
+            <span id="lock-note"></span>
+            <span><span id="counter">0</span>/240</span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn--primary btn--lg" id="ask-btn">Ask</button>
+      </form>
+
+      <div class="legend" id="legend">
+        <p class="legend__key">
+          <span class="legend__ramp" aria-hidden="true">
+            <span class="legend__step legend__step--1"></span><span class="legend__step legend__step--2"></span><span class="legend__step legend__step--3"></span><span class="legend__step legend__step--4"></span><span class="legend__step legend__step--5"></span>
+          </span>
+          <span>Stronger colour means more of the room is stuck on it.</span>
+        </p>
+        <span class="legend__count" id="legend-count" role="status"></span>
+      </div>
+
+      <section class="grid" id="grid" aria-label="Doubts in this subject"></section>
+
+      <p class="note-line" id="note-line"></p>
+      <p class="note-line note-line--warn" id="storage-note" hidden></p>
+    </section>
+  </main>
+
+  <footer class="container" data-footer></footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/feed.js"></script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en" data-palette="blue" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Me Too — For professors</title>
+  <meta name="description" content="The professor dashboard: doubts ranked by Me too count, replies, and a re-explain checklist for next class.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0b'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ffe14d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/theme.js"></script>
+</head>
+<body data-page="professor">
+  <header class="nav"></header>
+
+  <main id="main" class="container" tabindex="-1">
+    <section class="gate" id="gate" aria-labelledby="gate-title">
+      <form class="box" id="gate-form" autocomplete="off">
+        <span class="kicker kicker--boxed">Professor access</span>
+        <h1 id="gate-title">See what your subject lost.</h1>
+        <p>Students stay anonymous. You see questions and counts, ranked, so you know exactly what to re-explain — for your subject and no one else's.</p>
+        <div class="field">
+          <label for="subject">Your subject</label>
+          <select id="subject" name="subject" required></select>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required autocomplete="current-password" spellcheck="false" aria-describedby="password-hint">
+          <span class="field__hint" id="password-hint"></span>
+        </div>
+        <p class="gate__error" id="gate-error" role="alert"></p>
+        <button type="submit" class="btn btn--primary btn--lg">Open dashboard</button>
+      </form>
+    </section>
+
+    <section id="dash-root" hidden aria-labelledby="dash-title">
+      <div class="page-head">
+        <div>
+          <span class="kicker" id="course"></span>
+          <h1 id="dash-title" tabindex="-1"></h1>
+        </div>
+        <div class="page-head__actions">
+          <button type="button" class="btn btn--ink" id="logout-btn">Lock &amp; switch subject</button>
+        </div>
+      </div>
+
+      <div class="dash">
+        <div>
+          <div class="stats" id="stats"></div>
+          <div class="section-title section-title--sub"><h2>Ranked by Me too</h2></div>
+          <div class="ranked" id="ranked"></div>
+        </div>
+        <aside class="box agenda" aria-labelledby="agenda-title">
+          <h2 id="agenda-title">Next class agenda</h2>
+          <p class="agenda__meta agenda__intro">Tick “Cover next class” on a doubt to add it here, ordered by how many were lost.</p>
+          <div id="agenda"></div>
+          <div class="agenda__actions">
+            <button type="button" class="btn btn--primary" id="copy-btn">Copy agenda</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="dash-foot">
+        <p class="dash-foot__note" id="reset-note">Demo data. Resetting restores this subject's seeded doubts and clears every reply and agenda tick on it. The other subjects are untouched.</p>
+        <div class="dash-foot__actions">
+          <button type="button" class="btn btn--sm" id="reset-btn">Reset demo data</button>
+          <span class="confirm" id="reset-confirm" hidden>
+            <span class="confirm__q" id="reset-q">Reset and lose every reply?</span>
+            <button type="button" class="btn btn--sm btn--danger" id="reset-yes">Yes, reset</button>
+            <button type="button" class="btn btn--sm" id="reset-no">Keep it</button>
+          </span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container" data-footer></footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/professor.js"></script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en" data-palette="blue" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Me Too — Half the room has the same question</title>
+  <meta name="description" content="Me Too lets students ask their professor anonymously and lets everyone else say me too with one tap. Built for DesignAthon 2026.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0b'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ffe14d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/theme.js"></script>
+</head>
+<body data-page="home">
+  <header class="nav"></header>
+
+  <main id="main" class="container" tabindex="-1">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero__copy">
+        <span class="kicker kicker--boxed">Anonymous doubts. Counted.</span>
+        <h1 class="hero__title" id="hero-title">Half the room has the same question.</h1>
+        <p class="hero__flag">Nobody asks it.</p>
+        <p class="hero__lede">Every subject gets its own board. Me Too lets you ask your professor anonymously, and lets everyone else say <strong>ME TOO</strong> with one tap. The professor sees what the lecture actually lost, not just who was brave enough to raise a hand.</p>
+        <div class="hero__cta">
+          <a class="btn btn--primary btn--lg" href="feed.html#ask">Ask anonymously</a>
+          <a class="btn btn--lg" href="feed.html">Browse subjects</a>
+        </div>
+      </div>
+
+      <div class="preview" role="group" aria-labelledby="preview-caption">
+        <div class="preview__grid" id="preview"></div>
+        <p class="preview__caption" id="preview-caption">Live from the feed. Stronger colour = more people lost.</p>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="how-title">
+      <div class="section-title"><h2 id="how-title">How it works</h2></div>
+      <div class="steps">
+        <article class="box step">
+          <div class="num-badge" aria-hidden="true">1</div>
+          <h3>Ask, with no name attached</h3>
+          <p>Type the thing you did not get. Nothing about you is stored, not even a nickname.</p>
+        </article>
+        <article class="box box--hue step">
+          <div class="num-badge" aria-hidden="true">2</div>
+          <h3>Classmates hit Me too</h3>
+          <p>If they were stuck at the same spot, one tap says so. The tile gets darker. The count is the proof you were never alone.</p>
+        </article>
+        <article class="box step">
+          <div class="num-badge" aria-hidden="true">3</div>
+          <h3>The professor re-explains</h3>
+          <p>Their dashboard ranks doubts by count, so the next lecture starts where this one lost people.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="why-title">
+      <div class="box box--ink band">
+        <h2 id="why-title">Why it works</h2>
+        <div>
+          <p>Psychologists call it <strong>pluralistic ignorance</strong>: each student privately assumes everyone else understood, so the question stays unasked. Anonymity removes the cost of asking. The Me too count removes the illusion that you were the only one.</p>
+          <span class="cite">Miller &amp; McFarland (1987), Journal of Personality and Social Psychology · Stowell, Oldham &amp; Bennett (2010), Teaching of Psychology · <a href="problem.html">Read the full problem and research</a></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="container" data-footer></footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/landing.js"></script>
+</body>
+</html>

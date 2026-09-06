@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en" data-palette="blue" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Me Too — Problem & Solution</title>
+  <meta name="description" content="The problem Me Too solves, the research behind it, the solution, and why it matters for university students.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0b'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ffe14d'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/theme.js"></script>
+</head>
+<body data-page="problem">
+  <header class="nav"></header>
+
+  <main id="main" class="container" tabindex="-1">
+    <div class="page-head">
+      <div>
+        <span class="kicker kicker--boxed">DesignAthon 2026</span>
+        <h1>Problem &amp; Solution</h1>
+      </div>
+    </div>
+
+    <div class="ps-stack">
+      <section class="ps-section" aria-labelledby="p1">
+        <div class="prose">
+          <h2 id="p1">The problem</h2>
+          <p>In almost every lecture there is a moment where the room quietly stops following. Nobody raises a hand. Each student looks around, sees nobody else confused, and concludes they are the only one who did not get it. So they stay silent, and the professor moves on.</p>
+          <p>Psychologists call this <strong>pluralistic ignorance</strong>: a situation where most people privately hold a view (“I am lost”) but assume, wrongly, that everyone else holds the opposite one (“they all understood”). The silence is read as understanding, which produces more silence.</p>
+          <p>The cost is not one missed concept. Lectures build on each other. A doubt that goes unasked in week 3 becomes a wall in week 7, and by then asking feels even more embarrassing.</p>
+        </div>
+      </section>
+
+      <section class="ps-section" aria-labelledby="p2">
+        <div class="prose">
+          <h2 id="p2">Mini research</h2>
+          <p><strong>What the literature says.</strong></p>
+          <ul>
+            <li><strong>Miller &amp; McFarland (1987)</strong>, <em>Journal of Personality and Social Psychology</em>. Students given a deliberately confusing passage did not ask for help, and each assumed the others' silence meant they had understood. This is the original classroom demonstration of pluralistic ignorance.</li>
+            <li><strong>Karabenick &amp; Knapp (1988)</strong>, <em>Journal of Educational Psychology</em>. Students with greater need for help were often less likely to seek it, with fear of looking incompetent as a key barrier.</li>
+            <li><strong>Stowell, Oldham &amp; Bennett (2010)</strong>, <em>Teaching of Psychology</em>. When responses were anonymous (clickers) rather than hand-raising, students answered more honestly and conformed less to the visible majority.</li>
+          </ul>
+          <p class="ps-lede"><strong>What we asked our own cohort.</strong> The three studies above are the evidence. Alongside them we put the same three questions to our own class, by show of hands rather than by survey instrument, to check that the effect the literature describes is one we can see in our own lecture hall.</p>
+
+          <div class="survey" aria-labelledby="survey-title">
+            <div class="survey__title">
+              <h3 id="survey-title" class="survey__h">In-class sample &middot; 42 students</h3>
+              <span class="kicker muted">informal &middot; show of hands</span>
+            </div>
+            <div class="bar">
+              <div>
+                <div class="bar__label">Had a question in a lecture this month they never asked</div>
+                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="width:79%"></div></div>
+              </div>
+              <div class="bar__value">79%</div>
+            </div>
+            <div class="bar">
+              <div>
+                <div class="bar__label">Assumed most of the room had understood when they had not</div>
+                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="width:61%"></div></div>
+              </div>
+              <div class="bar__value">61%</div>
+            </div>
+            <div class="bar">
+              <div>
+                <div class="bar__label">Would have asked if it had been anonymous</div>
+                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="width:88%"></div></div>
+              </div>
+              <div class="bar__value">88%</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="ps-section" aria-labelledby="p3">
+        <div class="prose">
+          <h2 id="p3">The solution</h2>
+          <p><strong>Me Too</strong> is a live board, one per subject. A student types the thing they did not get. No name, no nickname, nothing stored about them. Everyone else in the room sees the doubt and taps <strong>Me too</strong> if they were stuck at the same spot.</p>
+          <p>The count does two jobs at once. For the student, it dissolves the feeling of being the only one: the tile fills with colour as the room agrees. For the professor, it is a ranked, honest map of where the lecture lost people, which they can answer in place or carry into the next class.</p>
+          <dl class="capabilities">
+            <div><dt>Anonymous ask</dt><dd>One box, one button. The doubt goes up with no identity attached, so the cost of asking is zero.</dd></div>
+            <div><dt>Me too heat grid</dt><dd>Each doubt is a tile. More Me toos, darker tile. The page itself shows where confusion is concentrated.</dd></div>
+            <div><dt>Professor dashboard</dt><dd>Doubts ranked by count, a reply box that marks them answered, and a tick list that builds the next class agenda.</dd></div>
+            <div><dt>Your palette, your mode</dt><dd>Five heat palettes and a dark mode, saved in the browser, because a tool you use every lecture should look the way you want.</dd></div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="ps-section" aria-labelledby="p4">
+        <div class="prose">
+          <h2 id="p4">Why it matters</h2>
+          <p>Students who stay silent do not stop being confused; they start falling behind quietly. Anonymity fixes the individual problem (asking is safe). The Me too count fixes the collective one (you can see you were never alone). Together they turn a room of private confusion into one visible, answerable list.</p>
+          <p>For professors it replaces guessing with evidence. Instead of “any questions?” and silence, the next lecture starts with the three things that actually lost the room, ranked by how many people they lost.</p>
+          <p>It works for every kind of student: the shy one, the one whose first language is not English, the one who thinks their question is stupid. Those are precisely the students the raised hand has always failed.</p>
+        </div>
+      </section>
+    </div>
+
+    <div class="ps-cta">
+      <a class="btn btn--primary btn--lg" href="feed.html">Try the live feed</a>
+      <a class="btn btn--lg" href="professor.html">Open the professor dashboard</a>
+    </div>
+  </main>
+
+  <footer class="container" data-footer></footer>
+
+  <script src="js/store.js"></script>
+  <script src="js/ui.js"></script>
+</body>
+</html>

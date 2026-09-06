@@ -1,0 +1,827 @@
+/* Me Too — Block design system
+   Ground, ink, hard borders, hard shadows, zero radius.
+   Palettes provide --hue / --hue-deep; heat steps are derived. */
+
+:root {
+  --ground: #f4f1ea;
+  --tile: #ffffff;
+  --ink: #0b0b0b;
+  --ink-soft: #4a4a4a;
+  --line: #0b0b0b;
+  --yellow: #ffe14d;
+  --on-yellow: #0b0b0b;
+  --danger: #d11a34;
+  --on-danger: #ffffff;
+
+  --hue: #3557ff;
+  --hue-deep: #1f35d6;
+
+  --heat-1: color-mix(in oklch, var(--hue) 18%, var(--tile));
+  --heat-2: color-mix(in oklch, var(--hue) 40%, var(--tile));
+  --heat-3: color-mix(in oklch, var(--hue) 62%, var(--tile));
+  --heat-4: var(--hue);
+  --heat-5: var(--hue-deep);
+  --heat-1-ink: var(--ink);
+  --heat-2-ink: var(--ink);
+  --heat-3-ink: var(--ink);
+  --heat-4-ink: #ffffff;
+  --heat-5-ink: #ffffff;
+
+  --shadow: 6px 6px 0 var(--line);
+  --shadow-sm: 4px 4px 0 var(--line);
+  --shadow-lg: 10px 10px 0 var(--line);
+  --border: 3px solid var(--line);
+
+  /* Fallbacks measured in-browser against the loaded webfonts (canvas advance widths over five
+     representative strings from this site). Impact used to sit first here and renders
+     1.34-1.55x narrower than Archivo Black, so every display heading reflowed hard the moment
+     the webfont landed. Arial Black is metrically identical to it (0.9998-1.0000) and ships on
+     both Windows and macOS, so it goes first and the swap costs nothing. */
+  --font-display: 'Archivo Black', 'Arial Black', Impact, sans-serif;
+  --font-body: 'Archivo', 'Archivo fallback', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Space Mono', 'Space Mono fallback', 'Courier New', monospace;
+
+  --gutter: clamp(20px, 4.5vw, 64px);
+  --ease-pop: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root[data-palette="crimson"] { --hue: #d11a34; --hue-deep: #8f0d24; }
+:root[data-palette="forest"]  { --hue: #197a42; --hue-deep: #0d4d2a; }
+:root[data-palette="violet"]  { --hue: #7a3cff; --hue-deep: #4a1cc2; }
+:root[data-palette="pink"]    { --hue: #cc1a73; --hue-deep: #8a104c; }
+
+:root[data-theme="dark"] {
+  --ground: #141414;
+  --tile: #1e1e1e;
+  --ink: #f4f1ea;
+  --ink-soft: #b8b3a8;
+  --line: #f4f1ea;
+
+  /* #d11a34 clears 5.4:1 on the light gate box but only 3.1:1 on the dark one, and the gate
+     error is 12px. Lift the red for dark surfaces; the ink that sits on it flips with it, so
+     the reset button stays legible on the same token. */
+  --danger: #ff5c70;
+  --on-danger: #0b0b0b;
+
+  /* The ramp has to climb in the same direction the board's own legend claims: 1 to 5 reads
+     faint to vivid, so the hottest doubt is the strongest colour, exactly as in light mode.
+
+     Steps 1-3 mix the hue into the dark tile; 4 is the hue itself; 5 lifts past it toward white.
+     That last step is the point. Ending the ramp at the pure hue gave dark mode a shorter range
+     than light mode, which gets an extra colour from --hue-deep, and the top two steps came out
+     1.28 and 1.25 apart: too close to separate at a glance. Lifting step 5 opens those to 1.41
+     and 1.49 while every step below keeps white ink above 5.3:1. Redistributing the mix
+     percentages alone cannot do this; the range, not the spacing, was the constraint.
+
+     Step 5 is light enough that it takes ink rather than white. */
+  --heat-1: color-mix(in oklch, var(--hue) 26%, var(--tile));
+  --heat-2: color-mix(in oklch, var(--hue) 48%, var(--tile));
+  --heat-3: color-mix(in oklch, var(--hue) 72%, var(--tile));
+  --heat-4: var(--hue);
+  --heat-5: color-mix(in oklch, var(--hue) 80%, #ffffff);
+  --heat-1-ink: #ffffff;
+  --heat-2-ink: #ffffff;
+  --heat-3-ink: #ffffff;
+  --heat-4-ink: #ffffff;
+  --heat-5-ink: #0b0b0b;
+}
+
+@font-face {
+  font-family: 'Archivo fallback';
+  src: local('Arial');
+  font-weight: 400 600;
+  size-adjust: 98.9%;
+}
+@font-face {
+  font-family: 'Archivo fallback';
+  src: local('Arial');
+  font-weight: 700;
+  size-adjust: 100.4%;
+}
+@font-face {
+  font-family: 'Space Mono fallback';
+  src: local('Courier New');
+  size-adjust: 102%;
+}
+
+/* ---------- Base ---------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { background: var(--ground); }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--ground);
+  -webkit-font-smoothing: antialiased;
+  text-wrap: pretty;
+}
+
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 400; text-transform: uppercase; line-height: 1; letter-spacing: -0.02em; overflow-wrap: break-word; }
+h1, h2, h3 { text-wrap: balance; }
+p { margin: 0; }
+a { color: inherit; }
+button { font: inherit; color: inherit; cursor: pointer; }
+input, textarea { font: inherit; color: inherit; }
+img, svg { display: block; }
+
+/* The ring used to be yellow on the near-white ground: about 1.1:1, which is no ring at all.
+   Ink clears 3:1 against every surface this app paints except the surfaces that are themselves
+   ink or saturated hue, and those take yellow instead. Between them, every focusable element
+   on the site has a visible indicator in both themes. */
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.nav :focus-visible,
+.composer :focus-visible,
+.box--ink :focus-visible,
+.tile--h4 :focus-visible,
+.tile--h5 :focus-visible,
+.stat--hue :focus-visible,
+.box--hue :focus-visible { outline-color: var(--yellow); }
+/* Dark mode's hottest tile is a lifted, light hue, so yellow would vanish on it. It takes the
+   same ink its own text does, which clears 5.4:1 there. */
+:root[data-theme="dark"] .tile--h5 :focus-visible { outline-color: var(--heat-5-ink); }
+/* The theme popover is inside .nav but is not part of the dark chrome: it paints --tile, so
+   the yellow ring above landed at 1.30:1 in light mode and the five swatches and the dark
+   switch had no visible focus at all. It takes the ordinary ink ring, like every other
+   light surface on the site. */
+.theme__panel :focus-visible { outline-color: var(--ink); }
+
+.skip-link {
+  position: absolute; left: 12px; top: -60px; z-index: 100;
+  padding: 10px 14px; background: var(--yellow); color: var(--on-yellow);
+  border: var(--border); font-family: var(--font-display); text-transform: uppercase; font-size: 0.8125rem;
+}
+.skip-link:focus { top: 12px; }
+#main:focus { outline: none; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.mono { font-family: var(--font-mono); }
+.kicker { font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.15em; text-transform: uppercase; }
+.kicker--boxed { display: inline-block; padding: 6px 10px; border: 2px solid var(--line); }
+.muted { color: var(--ink-soft); }
+
+.container { width: min(1440px, 100%); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
+
+/* ---------- Nav ---------- */
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: #0b0b0b; color: #ffffff;
+  border-bottom: 3px solid var(--line);
+}
+.nav__inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 72px; padding: 0 clamp(16px, 3vw, 40px);
+}
+/* The wordmark must never wrap or be squeezed; giving the label back to the Ask button
+   narrowed the row enough that flex started shrinking the brand instead. */
+.nav__brand { display: flex; align-items: center; flex-shrink: 0; text-decoration: none; color: #ffffff; }
+/* The mark occupies the b's slot in d-o-u-b-t: it sits on the baseline and rises to the
+   ascender, the height a lowercase b would reach, so it reads as the missing letter rather
+   than as a logo parked next to the name. Sized in em so it tracks the wordmark through both
+   nav breakpoints instead of needing its own set of numbers at each one. */
+.nav__mark { display: inline-block; width: 0.6em; height: 0.72em; margin: 0 0.04em; background: var(--yellow); vertical-align: baseline; }
+.nav__word { font-family: var(--font-display); font-size: 1.375rem; letter-spacing: 0.02em; white-space: nowrap; }
+.nav__nav { display: contents; }
+.nav__links { display: flex; align-items: center; gap: clamp(20px, 3vw, 40px); list-style: none; margin: 0; padding: 0; }
+.nav__link {
+  font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #ffffff; text-decoration: none; padding: 6px 0; border-bottom: 3px solid transparent;
+}
+.nav__link:hover { color: var(--yellow); }
+.nav__link[aria-current="page"] { color: var(--yellow); border-bottom-color: var(--yellow); }
+.nav__actions { display: flex; align-items: center; gap: 12px; }
+.nav__cta-short { display: none; }
+.nav .nav__menu-btn { display: none; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  min-height: 44px; padding: 12px 20px;
+  background: var(--tile); color: var(--ink);
+  border: var(--border); box-shadow: var(--shadow-sm);
+  font-family: var(--font-display); font-size: 0.8125rem; letter-spacing: 0.08em; text-transform: uppercase;
+  text-decoration: none; transition: transform 120ms ease, box-shadow 120ms ease;
+}
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--line); }
+.btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--line); }
+.btn--primary { background: var(--yellow); color: var(--on-yellow); }
+.btn--ink { background: #0b0b0b; color: #ffffff; border-color: #0b0b0b; }
+:root[data-theme="dark"] .btn--ink { background: #f4f1ea; color: #0b0b0b; border-color: #f4f1ea; }
+.btn--lg { min-height: 56px; padding: 16px 28px; font-size: 1rem; box-shadow: var(--shadow); }
+.btn--lg:hover { box-shadow: 8px 8px 0 var(--line); }
+.btn--sm { min-height: 44px; padding: 8px 14px; font-size: 0.75rem; }
+/* The only destructive control in the product. White on this red measures 5.37:1 in both
+   themes, so it can carry a label rather than relying on colour alone to read as dangerous. */
+.btn--danger { background: var(--danger); color: var(--on-danger); border-color: var(--danger); }
+.btn--icon { padding: 0; width: 44px; }
+.btn[disabled] { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: var(--shadow-sm); }
+.nav .btn { border-color: #ffffff; box-shadow: 4px 4px 0 #ffffff; }
+.nav .btn:hover { box-shadow: 6px 6px 0 #ffffff; }
+.nav .btn:active { box-shadow: 1px 1px 0 #ffffff; }
+.nav .btn--ghost { background: #0b0b0b; color: #ffffff; }
+
+/* Theme popover */
+.theme { position: relative; }
+.theme__panel {
+  position: absolute; right: 0; top: calc(100% + 14px); z-index: 60;
+  width: 300px; padding: 20px; background: var(--tile); color: var(--ink);
+  border: var(--border); box-shadow: var(--shadow);
+}
+.theme__panel[hidden] { display: none; }
+.theme__title { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 12px; }
+.swatches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; list-style: none; }
+.swatch {
+  position: relative; width: 100%; aspect-ratio: 1; padding: 0;
+  border: var(--border); background: linear-gradient(135deg, var(--sw-deep) 0 50%, var(--sw-mid) 50% 100%);
+  box-shadow: 3px 3px 0 var(--line); transition: transform 120ms ease;
+}
+.swatch:hover { transform: translate(-1px, -1px); }
+.swatch[aria-pressed="true"] { box-shadow: 3px 3px 0 var(--line), inset 0 0 0 3px var(--tile); }
+.swatch[aria-pressed="true"]::after {
+  content: ""; position: absolute; inset: 0; margin: auto; width: 12px; height: 12px; background: var(--yellow); border: 2px solid #0b0b0b;
+}
+.swatch-name { display: block; margin-top: 6px; font-family: var(--font-mono); font-size: 0.625rem; letter-spacing: 0.06em; text-transform: uppercase; text-align: center; color: var(--ink-soft); }
+.theme__row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 2px solid var(--line); }
+.switch {
+  position: relative; width: 56px; height: 30px; padding: 0; border: var(--border); background: var(--tile); flex-shrink: 0;
+}
+.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; background: var(--line); transition: transform 160ms var(--ease-pop); }
+.switch[aria-checked="true"] { background: var(--yellow); }
+.switch[aria-checked="true"]::after { transform: translateX(26px); background: #0b0b0b; }
+
+/* ---------- Layout blocks ---------- */
+
+.section { padding-top: clamp(56px, 8vw, 110px); }
+.section-title { display: flex; align-items: center; gap: 20px; margin-bottom: 32px; }
+.section-title h2 { font-size: clamp(1.625rem, 3vw, 2.25rem); }
+.section-title::after { content: ""; flex-grow: 1; height: 3px; background: var(--line); }
+
+.box { background: var(--tile); border: var(--border); box-shadow: var(--shadow); padding: clamp(20px, 3vw, 32px); }
+.box--hue { background: var(--hue); color: #ffffff; }
+.box--yellow { background: var(--yellow); color: var(--on-yellow); }
+.box--ink { background: #0b0b0b; color: #ffffff; border-color: #0b0b0b; box-shadow: none; }
+:root[data-theme="dark"] .box--ink { background: #1e1e1e; border-color: #f4f1ea; }
+
+.num-badge {
+  width: 48px; height: 48px; display: flex; align-items: center; justify-content: center;
+  background: var(--yellow); color: var(--on-yellow); border: 3px solid #0b0b0b;
+  font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700;
+}
+
+.footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  margin-top: clamp(64px, 8vw, 100px); padding: 20px 0 40px; border-top: 3px solid var(--line);
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.footer nav { display: contents; }
+.footer ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; }
+.footer a { display: inline-block; padding: 6px 0; text-decoration: none; }
+/* --hue on the ground measures 3.42-3.48:1 in dark mode across every palette, so hovering
+   made a footer link less readable than leaving it alone. --heat-5 is the one ramp step
+   already engineered to read on both grounds: 5.07 dark, 7.33 light, worst case. */
+.footer a:hover { color: var(--heat-5); }
+
+/* ---------- Hero (landing) ---------- */
+
+.hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 4vw, 56px); align-items: center; padding-top: clamp(40px, 6vw, 72px); }
+.hero__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
+.hero__title { font-size: clamp(2.75rem, 6.6vw, 6rem); line-height: 0.92; }
+.hero__flag {
+  display: inline-block; padding: 10px 18px; background: var(--hue); color: #ffffff;
+  font-family: var(--font-display); font-size: clamp(1.625rem, 3.9vw, 3.5rem); text-transform: uppercase; line-height: 1; letter-spacing: -0.01em;
+  box-shadow: 8px 8px 0 var(--line);
+}
+.hero__lede { font-size: clamp(1.0625rem, 1.4vw, 1.25rem); font-weight: 500; max-width: 600px; }
+.hero__cta { display: flex; flex-wrap: wrap; gap: 20px; }
+
+.preview { display: flex; flex-direction: column; gap: 14px; }
+.preview__grid {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px;
+  background: var(--line); border: var(--border); box-shadow: var(--shadow-lg);
+}
+.preview__cell {
+  aspect-ratio: 1; padding: 14px; display: flex; flex-direction: column; justify-content: space-between;
+  background: var(--tile); color: var(--ink); transition: background-color 350ms ease, color 350ms ease;
+}
+.preview__count { font-family: var(--font-mono); font-size: clamp(1.375rem, 2.6vw, 2.125rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.preview__count--word { font-size: 0.8125rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.preview__label { font-size: 0.75rem; line-height: 1.4; font-weight: 500; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.preview__cell--empty { border: 3px dashed var(--line); align-items: center; justify-content: center; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; }
+.preview__caption { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
+
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.step { display: flex; flex-direction: column; gap: 14px; }
+.step h3 { font-size: 1.375rem; line-height: 1.1; }
+
+.band { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 40px; align-items: start; padding: clamp(24px, 3vw, 40px); }
+.band h2 { font-size: 1.375rem; color: var(--yellow); }
+.band p { font-size: 1.0625rem; max-width: 68ch; }
+.cite { display: block; margin-top: 12px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.6; color: #d9d4c8; }
+
+/* ---------- Feed ---------- */
+
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap; padding-top: clamp(28px, 4vw, 44px); }
+.page-head h1 { font-size: clamp(1.75rem, 3.2vw, 2.75rem); margin-top: 10px; overflow-wrap: anywhere; }
+
+.filters { display: flex; border: var(--border); box-shadow: var(--shadow-sm); background: var(--line); }
+.filters__btn {
+  min-height: 44px; padding: 10px 18px; background: var(--tile); color: var(--ink); border: 0;
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+}
+.filters__btn + .filters__btn { margin-left: 3px; }
+/* The group's own background is the divider ink, so an offset ring would sit ink-on-ink and
+   vanish in both themes. Draw it inside the button instead, and take the colour from the
+   label: the pressed button inverts, and its own text is the one colour guaranteed to read
+   against whichever background it is currently wearing. */
+.filters :focus-visible { outline-offset: -3px; outline-color: currentColor; }
+.filters__btn[aria-checked="true"] { background: #0b0b0b; color: var(--yellow); }
+:root[data-theme="dark"] .filters__btn[aria-checked="true"] { background: #f4f1ea; color: #0b0b0b; }
+
+.composer {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: stretch;
+  margin-top: 36px; padding: 20px; background: #0b0b0b; color: #ffffff;
+}
+:root[data-theme="dark"] .composer { background: #1e1e1e; border: var(--border); }
+.composer__field { display: flex; flex-direction: column; background: #ffffff; color: #0b0b0b; border: 3px solid #0b0b0b; }
+:root[data-theme="dark"] .composer__field { background: #f4f1ea; }
+.composer__input {
+  width: 100%; min-height: 64px; padding: 18px 20px; resize: vertical; border: 0; background: transparent; color: #0b0b0b;
+  font-family: var(--font-mono); font-size: 1rem; letter-spacing: 0.02em;
+}
+.composer__input::placeholder { color: #6b6b6b; text-transform: uppercase; }
+.composer__input:focus { outline: none; }
+.composer__field:focus-within { outline: 3px solid var(--yellow); outline-offset: 2px; }
+.composer__meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 14px 10px; border-top: 2px solid #0b0b0b; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: #4a4a4a; }
+.composer__meta span { display: inline-flex; align-items: center; gap: 8px; }
+.composer .btn { align-self: stretch; }
+
+/* The board: each doubt spans columns and rows by how much of the room it lost.
+   Row unit is roughly half a column, so 1x2 is a square, 2x1 a wide strip, 2x2 a big square.
+
+   No dense packing. Dense pulled a small tile forward whenever a wide one would not fit the
+   remaining columns, so "Most me too" painted 31, 27, 14, 23 while the markup said otherwise.
+   Reading order is the ranking; a gap is a cheaper price than a board that misreports rank. */
+.grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(190px, auto);
+  gap: 24px; margin-top: 36px;
+}
+
+.tile {
+  position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: 14px;
+  min-width: 0; padding: 22px; background: var(--tile); color: var(--ink);
+  border: var(--border); box-shadow: var(--shadow);
+  transition: background-color 400ms ease, color 400ms ease;
+}
+.tile--m { grid-row: span 2; }
+.tile--w { grid-column: span 2; }
+.tile--l { grid-column: span 2; grid-row: span 2; }
+
+/* Small: one row tall, so the count shrinks and sits inline. */
+.tile--s { padding: 18px; gap: 10px; }
+.tile--s .tile__count strong { font-size: 2.125rem; }
+.tile--s .tile__text { font-size: 0.9375rem; }
+/* Padding shrinks on a small tile; the target does not. 44px is what .btn and .metoo
+   promise everywhere else, and the smallest tiles are the hardest ones to hit. */
+.tile--s .metoo { padding: 8px 12px; }
+
+/* Wide: count becomes a left column, text and actions on the right. */
+.tile--w { display: grid; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; column-gap: 24px; row-gap: 12px; align-items: start; }
+.tile--w .tile__top { grid-row: 1 / 3; flex-direction: column; align-items: flex-start; gap: 12px; }
+.tile--w .tile__count { flex-direction: column; align-items: flex-start; gap: 6px; }
+.tile--w .tile__text { grid-column: 2; align-self: center; }
+.tile--w .tile__bottom, .tile--w .reply { grid-column: 2; align-self: end; }
+.tile--w.tile--answered .tile__top { flex-direction: column; }
+
+/* Big: room for the longest doubts, so everything scales up. */
+.tile--l { padding: 28px; }
+.tile--l .tile__count strong { font-size: 4.75rem; }
+.tile--l .tile__text { font-size: 1.375rem; line-height: 1.4; }
+.tile--h1 { background: var(--heat-1); color: var(--heat-1-ink); }
+.tile--h2 { background: var(--heat-2); color: var(--heat-2-ink); }
+.tile--h3 { background: var(--heat-3); color: var(--heat-3-ink); }
+.tile--h4 { background: var(--heat-4); color: var(--heat-4-ink); }
+.tile--h5 { background: var(--heat-5); color: var(--heat-5-ink); }
+.tile--answered { background: var(--yellow); color: var(--on-yellow); }
+.tile__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.tile__count { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-mono); }
+.tile__count strong { font-size: 3.5rem; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
+.tile__count span { font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.tile__text { font-size: 1.125rem; line-height: 1.45; font-weight: 500; overflow-wrap: anywhere; }
+.tile__bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+/* No opacity here. At 85% this line measured 4.16-4.37:1 on heat-4 and heat-5 across every
+   palette, under the 4.5 floor, and it fails on precisely the tiles the most people are stuck
+   on. 11px tracked uppercase mono is already subordinate; the transparency only cost contrast. */
+.tile__meta { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.04em; text-transform: uppercase; }
+/* The tag stays ink-on-yellow in both themes on purpose: it is self-contained, it rides on
+   tiles of every heat step including the yellow answered tile, and a black chip is at home on
+   a dark board. The reply card and the Me too button were the actual white islands. */
+.tag { display: inline-block; padding: 4px 8px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; background: #0b0b0b; color: var(--yellow); }
+.tag--outline { background: transparent; color: inherit; border: 2px solid currentColor; }
+/* A white card on a dark board read as a lit window. Takes the theme's own surfaces now,
+   the way .field input and .composer__field already did. */
+.reply { padding: 12px; background: var(--tile); color: var(--ink); border: 3px solid var(--line); font-size: 0.8125rem; line-height: 1.4; overflow-wrap: anywhere; }
+.reply strong { font-weight: 700; }
+/* Answered, but the professor wrote nothing. A quiet line, not an empty card pretending to
+   hold words. Colour comes from the tile it sits on, so it works on yellow and on any heat step. */
+.answered-note {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; line-height: 1.4;
+}
+.answered-note svg { flex-shrink: 0; }
+
+.metoo {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 10px 14px;
+  background: var(--tile); color: var(--ink); border: 3px solid var(--line); box-shadow: none;
+  font-family: var(--font-display); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+  transition: transform 120ms ease, background-color 160ms ease;
+}
+.metoo:hover { transform: translate(-1px, -1px); box-shadow: 3px 3px 0 var(--line); }
+.metoo:active { transform: translate(1px, 1px); box-shadow: none; }
+/* Pressed stays yellow in both themes: it is the one state that has to read as "counted"
+   at a glance across a board of thirteen, and yellow is that signal everywhere else too. */
+.metoo[aria-pressed="true"] { background: var(--yellow); color: var(--on-yellow); }
+.metoo[disabled] { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.tile.is-pumping { animation: pump 420ms var(--ease-pop); }
+@keyframes pump { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
+
+.tile.is-new { animation: rise 500ms var(--ease-pop) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Capped, because --i is the raw index and PAGE is 120: uncapped, the last tile of a busy
+   lecture waited 5.36s to appear. The stagger reads as a wave in the first dozen tiles; past
+   that it is just latency. */
+.grid:not(.is-settled) > .tile { animation: rise 500ms var(--ease-pop) both; animation-delay: calc(min(var(--i, 0), 12) * 45ms); }
+
+/* ---------- First run: hint, legend, empty states ---------- */
+
+/* One-time orientation for someone who has never asked or tapped. Retires itself the moment
+   they do either, so it is never the thing standing between them and the board. */
+.hint {
+  display: flex; align-items: flex-start; gap: 16px;
+  margin-top: 24px; padding: 14px 14px 14px 18px;
+  background: var(--yellow); color: var(--on-yellow);
+  border: var(--border); box-shadow: var(--shadow-sm);
+}
+/* An author display rule outranks the hidden attribute, so say it explicitly. */
+.hint[hidden] { display: none; }
+.hint__text { font-size: 0.9375rem; font-weight: 500; line-height: 1.5; max-width: 68ch; }
+.hint__close {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; margin-left: auto; padding: 0;
+  background: transparent; color: inherit; border: 2px solid currentColor; cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+.hint__close:hover { background: #0b0b0b; color: var(--yellow); border-color: #0b0b0b; }
+
+/* The board's encoding, stated on the board. Doubles as the room's live reading. */
+.legend {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap;
+  margin-top: 32px; padding: 10px 16px;
+  background: var(--tile); border: var(--border); box-shadow: var(--shadow-sm);
+}
+.legend[hidden] { display: none; }
+.legend + .grid { margin-top: 18px; }
+.legend__key { display: flex; align-items: center; gap: 14px; font-size: 0.875rem; font-weight: 500; }
+.legend__ramp { display: inline-flex; flex-shrink: 0; }
+.legend__step { width: 26px; height: 20px; border: 2px solid var(--line); }
+.legend__step + .legend__step { margin-left: -2px; }
+.legend__step--1 { background: var(--heat-1); }
+.legend__step--2 { background: var(--heat-2); }
+.legend__step--3 { background: var(--heat-3); }
+.legend__step--4 { background: var(--heat-4); }
+.legend__step--5 { background: var(--heat-5); }
+.legend__count { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-soft); }
+
+.grid__more {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+  padding: 18px; border: 3px dashed var(--line);
+}
+.grid__more-meta { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+
+.empty {
+  grid-column: 1 / -1; display: grid; gap: clamp(20px, 3vw, 36px);
+  padding: clamp(24px, 4vw, 44px); background: var(--tile); border: 3px dashed var(--line);
+}
+.empty--first { grid-template-columns: minmax(0, 220px) minmax(0, 1fr); align-items: center; }
+/* Two filled tiles and two open slots: the board, shown rather than described. */
+.empty__ghost { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 76px; gap: 10px; max-width: 212px; }
+.empty__ghost span { border: 3px dashed var(--line); }
+.empty__ghost span:nth-child(1) { background: var(--heat-4); border-style: solid; }
+.empty__ghost span:nth-child(2) { background: var(--heat-2); border-style: solid; }
+.empty__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.empty__title { font-size: clamp(1.25rem, 2.4vw, 1.625rem); }
+.empty__body { font-size: 1rem; line-height: 1.5; max-width: 62ch; }
+
+/* Your own doubt before anyone has answered it. A big zero and a dead button were the wrong
+   reward for the one genuinely brave action on the page. Dashed carries the same meaning it
+   does on the empty board: a slot the room has not filled in yet. */
+.tile--waiting {
+  justify-content: flex-start; gap: 16px;
+  border-style: dashed; box-shadow: none;
+}
+.tile--waiting .tile__bottom { margin-top: auto; }
+/* No count to fill it yet, so it does not claim the extra row. It earns the height when the room answers. */
+.tile.tile--waiting.tile--m, .tile.tile--waiting.tile--l { grid-row: auto; }
+.waiting {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-soft);
+}
+.waiting__dot { flex-shrink: 0; width: 10px; height: 10px; background: var(--hue); animation: blip 1.8s ease-in-out infinite; }
+@keyframes blip { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.note-line[hidden] { display: none; }
+.note-line { display: flex; align-items: center; gap: 10px; margin-top: 40px; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-soft); }
+.note-line--warn {
+  margin-top: 20px; padding: 12px 16px; align-items: flex-start;
+  background: var(--yellow); color: var(--on-yellow); border: 3px solid var(--line);
+  font-size: 0.8125rem; line-height: 1.5; letter-spacing: 0.01em; text-transform: none;
+}
+.note-line--warn svg { flex-shrink: 0; margin-top: 3px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 80; transform: translate(-50%, 20px);
+  padding: 12px 18px; background: #0b0b0b; color: var(--yellow); border: 3px solid var(--yellow);
+  font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
+  opacity: 0; pointer-events: none; transition: opacity 200ms ease, transform 200ms var(--ease-pop);
+}
+.toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+/* Only a toast carrying an action takes pointer events; the plain notice stays inert so it
+   never swallows a click aimed at the board underneath it. */
+.toast.has-action { pointer-events: auto; display: flex; align-items: center; gap: 16px; }
+.toast__action {
+  min-height: 36px; padding: 6px 12px; background: var(--yellow); color: var(--on-yellow);
+  border: 2px solid var(--yellow); font: inherit; text-transform: uppercase; cursor: pointer;
+}
+.toast__action:hover { background: #0b0b0b; color: var(--yellow); }
+.toast__action:focus-visible { outline: 3px solid #ffffff; outline-offset: 2px; }
+
+/* ---------- Problem & Solution ---------- */
+
+/* 760px of Archivo at 17px runs 87-90 characters; the ceiling for comfortable reading is 75.
+   This is the one page on the site that is pure reading, so it gets a real measure. */
+.ps-stack { margin-top: 40px; }
+.ps-cta { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 40px; }
+.prose { max-width: 62ch; font-size: 1.0625rem; }
+.prose p + p { margin-top: 14px; }
+.prose strong { font-weight: 700; }
+.ps-section { padding: clamp(28px, 4vw, 44px) 0; border-top: 3px solid var(--line); }
+.ps-section:last-of-type { border-bottom: 3px solid var(--line); }
+.ps-section h2 { font-size: clamp(1.5rem, 2.6vw, 2.125rem); margin-bottom: 18px; }
+.ps-section ul { margin: 14px 0 0; padding-left: 20px; }
+.ps-section li + li { margin-top: 8px; }
+.survey { margin-top: 24px; padding: 24px; background: var(--tile); border: var(--border); box-shadow: var(--shadow); }
+.survey__title { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.survey__h { font-size: 1rem; }
+.survey__questions { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 8px; font-size: 0.9375rem; font-weight: 500; line-height: 1.45; }
+/* Markers carry the numbering, so they are text: they inherit ink rather than taking the hue,
+   which only cleared 3.1:1 on the dark panel. Matches .agenda li::marker. */
+.survey__questions li::marker { font-family: var(--font-mono); font-weight: 700; }
+.survey__status { margin-top: 16px; padding-top: 14px; border-top: 2px solid var(--line); font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); }
+
+.bar { display: grid; grid-template-columns: minmax(0, 1fr) 64px; align-items: center; gap: 12px; margin-top: 14px; }
+.bar__label { font-size: 0.875rem; font-weight: 500; margin-bottom: 6px; }
+.bar__track { height: 22px; background: var(--heat-1); border: 2px solid var(--line); }
+/* The fill takes the ramp's top step, not the raw hue. In dark mode the raw hue is itself dark,
+   so fill against track measured 2.44:1 and the proportion — the only thing this graphic says —
+   stopped being readable. heat-5 is the deep end in light and the lifted end in dark, so the
+   bar reads in both. */
+.bar__fill { height: 100%; background: var(--heat-5); }
+.bar__value { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+
+.ps-lede { margin-top: 18px; }
+.capabilities { margin: 24px 0 0; border-top: 2px solid var(--line); }
+.capabilities > div { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr); gap: 8px 24px; padding: 16px 0; border-bottom: 2px solid var(--line); }
+.capabilities dt { font-family: var(--font-display); font-size: 0.9375rem; text-transform: uppercase; letter-spacing: -0.01em; line-height: 1.2; }
+.capabilities dd { margin: 0; font-size: 0.9375rem; line-height: 1.5; }
+
+/* ---------- Professor ---------- */
+
+.gate { max-width: 520px; margin: clamp(40px, 8vw, 96px) auto 0; }
+.gate .box { display: flex; flex-direction: column; gap: 18px; }
+.gate h1 { font-size: clamp(1.625rem, 3vw, 2.125rem); }
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field label { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.field input {
+  min-height: 52px; padding: 12px 16px; background: #ffffff; color: #0b0b0b; border: var(--border);
+  font-family: var(--font-mono); font-size: 1rem; letter-spacing: 0.06em;
+}
+/* The native select arrow is the one control in this page that would arrive with a system
+   look: rounded, soft, borrowed from the OS. Replace it with the same hard chevron the rest
+   of the site draws. */
+.field select {
+  min-height: 52px; padding: 12px 44px 12px 16px; background-color: #ffffff; color: #0b0b0b; border: var(--border);
+  font-family: var(--font-mono); font-size: 0.9375rem; letter-spacing: 0.04em; cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b0b0b' stroke-width='3' stroke-linecap='square'%3E%3Cpath d='M5 8l7 7 7-7'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+}
+:root[data-theme="dark"] .field input { background: #f4f1ea; }
+:root[data-theme="dark"] .field select { background-color: #f4f1ea; }
+.field__hint { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-soft); }
+.field__hint code { padding: 2px 6px; background: var(--yellow); color: #0b0b0b; border: 2px solid #0b0b0b; font-weight: 700; }
+.gate__error { color: var(--danger); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; min-height: 1.4em; }
+.is-shaking { animation: shake 360ms ease; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+
+.dash { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; margin-top: 36px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.stat { padding: 18px 20px; border: var(--border); background: var(--tile); box-shadow: var(--shadow-sm); }
+.stat strong { display: block; font-family: var(--font-mono); font-size: 2.5rem; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: 8px; font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.stat--hue { background: var(--hue); color: #ffffff; }
+.stat--hue span { color: #ffffff; }
+
+.ranked { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
+.row { display: grid; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); gap: 20px; padding: 20px; background: var(--tile); border: var(--border); box-shadow: var(--shadow-sm); }
+.row--answered { background: var(--yellow); color: var(--on-yellow); }
+.row__count { font-family: var(--font-mono); font-size: 2.75rem; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
+.row__count small { display: block; margin-top: 8px; font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 400; }
+.row__body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.row__text { font-size: 1.125rem; font-weight: 500; line-height: 1.45; max-width: 58ch; overflow-wrap: anywhere; }
+.row__heat { height: 12px; border: 2px solid var(--line); background: var(--tile); }
+.row__heat i { display: block; height: 100%; background: var(--hue); }
+/* The answered row is yellow in both themes and takes ink text, so its bar has to be a fixed
+   light context too. Inheriting --tile gave dark mode a #1e1e1e track under a #0b0b0b fill:
+   1.18:1, a proportion graphic that showed nothing. White track, ink fill, ink border. */
+.row--answered .row__heat { background: #ffffff; border-color: #0b0b0b; }
+.row--answered .row__heat i { background: #0b0b0b; }
+.row__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.check { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 6px; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.check input { width: 22px; height: 22px; margin: 0; accent-color: var(--hue); cursor: pointer; }
+.row__reply { display: flex; flex-direction: column; gap: 10px; }
+.row__reply textarea { min-height: 72px; padding: 12px 14px; border: var(--border); background: #ffffff; color: #0b0b0b; font-size: 0.9375rem; resize: vertical; }
+:root[data-theme="dark"] .row__reply textarea { background: #f4f1ea; }
+.row__reply-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.ranked-empty { padding: clamp(24px, 4vw, 40px); background: var(--tile); border: 3px dashed var(--line); }
+.ranked-empty h3 { font-size: 1.25rem; }
+.ranked-empty p { margin-top: 12px; font-size: 0.9375rem; line-height: 1.5; max-width: 60ch; }
+
+.page-head__actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+/* Reset lives at the foot of the dashboard, past everything a professor came here to do,
+   rather than first in the header next to Lock where a mis-click cost the whole lecture. */
+.dash-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap;
+  margin-top: clamp(40px, 5vw, 64px); padding-top: 20px; border-top: 3px solid var(--line);
+}
+.dash-foot__note { font-size: 0.875rem; line-height: 1.5; max-width: 60ch; color: var(--ink-soft); }
+.dash-foot__actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.dash-foot__actions [hidden] { display: none; }
+.confirm { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.confirm__q { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.section-title--sub { margin-top: 36px; }
+.section-title--sub h2 { font-size: 1.5rem; }
+.agenda__intro { margin-top: 8px; line-height: 1.5; }
+
+.agenda { position: sticky; top: 96px; }
+.agenda h2 { font-size: 1.25rem; }
+.agenda ol { margin: 16px 0 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; font-size: 0.9375rem; font-weight: 600; overflow-wrap: anywhere; }
+.agenda li::marker { font-family: var(--font-mono); font-weight: 700; }
+.agenda__meta { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.agenda__empty { margin-top: 16px; padding: 16px; border: 3px dashed var(--line); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.agenda__actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+
+/* ---------- Responsive ---------- */
+
+/* ---------- subject picker ---------- */
+
+.picker__lede { margin-top: 18px; font-size: clamp(1rem, 1.4vw, 1.125rem); font-weight: 500; line-height: 1.5; max-width: 64ch; }
+.picker__cue {
+  display: inline-block; margin-top: 18px; padding: 10px 14px;
+  background: var(--yellow); color: var(--on-yellow); border: 2px solid #0b0b0b;
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.picker__cue[hidden] { display: none; }
+
+.subjects { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-top: 32px; }
+.subject {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 24px; background: var(--tile); color: inherit; text-decoration: none;
+  border: var(--border); box-shadow: var(--shadow-sm);
+  transition: transform 140ms var(--ease-pop), box-shadow 140ms var(--ease-pop);
+}
+.subject:hover { transform: translate(-3px, -3px); box-shadow: var(--shadow); }
+.subject:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--line); }
+.subject__code { padding: 5px 9px; background: #0b0b0b; color: var(--yellow); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+/* Sized so the longest name on the timetable ("Microeconomics") clears a card at the narrowest
+   column the grid will build. A display face this wide breaks mid-word rather than overflowing,
+   and "MICROECONOMI / CS" is not a subject anybody recognises. */
+.subject__name { font-size: clamp(1.25rem, 2vw, 1.5rem); line-height: 1.08; overflow-wrap: break-word; }
+.subject__prof { font-family: var(--font-mono); font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+/* The same question the tiles answer one level down, at subject scale: how much of the week
+   is stuck here, relative to the busiest board. */
+.subject__bar { display: block; width: 100%; height: 12px; margin-top: 8px; border: 2px solid var(--line); background: var(--tile); }
+.subject__bar i { display: block; height: 100%; background: var(--hue); }
+.subject__stats { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
+.subject__stats strong { color: var(--ink); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
+/* Pinned to the bottom edge so the row of cards ends on one line however long the names run. */
+.subject__go { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 14px; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.subject__go svg { transition: transform 140ms var(--ease-pop); }
+.subject:hover .subject__go svg { transform: translateX(4px); }
+/* A board with nothing on it is drawn as an outline, the same way the empty grid is. */
+.subject--quiet { border-style: dashed; box-shadow: none; }
+.subject--quiet .subject__bar { display: none; }
+
+.backlink {
+  display: flex; width: max-content; align-items: center; gap: 8px; margin-bottom: 12px;
+  font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; text-decoration: none; color: var(--ink-soft);
+}
+.backlink:hover { color: var(--ink); }
+
+@media (max-width: 1100px) {
+  .hero { grid-template-columns: 1fr; }
+  .preview { max-width: 520px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(170px, auto); }
+  .steps { grid-template-columns: 1fr; }
+  .band { grid-template-columns: 1fr; gap: 16px; }
+  .dash { grid-template-columns: 1fr; }
+  .agenda { position: static; }
+}
+
+@media (max-width: 760px) {
+  .nav__links {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; align-items: stretch; gap: 0;
+    background: #0b0b0b; border-bottom: 3px solid var(--line);
+  }
+  .nav__links.is-open { display: flex; }
+  .nav__links li { border-top: 2px solid #333; }
+  .nav__link { display: block; padding: 16px clamp(16px, 3vw, 40px); border-bottom: 0; }
+  .nav__link[aria-current="page"] { background: #1a1a1a; }
+  .nav .nav__menu-btn { display: inline-flex; }
+  /* "Ask anonymously" used to collapse to a bare hand icon, leaving three same-sized
+     unlabelled squares in a row: palette, ask, menu. The product's whole purpose became
+     unidentifiable on the device it is actually used on. Shorten the label, never drop it. */
+  .nav__cta-text { display: none; }
+  .nav__cta-short { display: inline; }
+  /* The icon was only ever standing in for the missing label. Now that the label is back,
+     the icon is the part that does not fit: a filled yellow "ASK" is unmistakable without it,
+     and dropping it keeps the whole row inside a 360px phone. */
+  .nav__actions .btn--primary svg { display: none; }
+  .nav__actions .btn--primary { padding: 12px 14px; }
+  .nav__inner { gap: 10px; padding: 0 14px; }
+  .nav__actions { gap: 8px; }
+  .nav__word { font-size: 1.1875rem; }
+  .theme { position: static; }
+  .theme__panel { position: fixed; left: 12px; right: 12px; top: 84px; width: auto; }
+}
+
+/* Small phones down to 320. The nav row was already 15px too wide here before the Ask label
+   went back in; this makes the whole row fit rather than only recovering what the label cost. */
+@media (max-width: 400px) {
+  .nav__inner { gap: 8px; padding: 0 10px; }
+  .nav__actions { gap: 6px; }
+  .nav__word { font-size: 1.0625rem; }
+  .btn--icon { width: 40px; }
+  .nav__actions .btn { min-height: 40px; }
+  .nav__actions .btn--primary { padding: 10px 12px; font-size: 0.75rem; }
+}
+
+@media (max-width: 640px) {
+  .subjects { grid-template-columns: 1fr; gap: 18px; }
+  .grid { grid-template-columns: 1fr; grid-auto-rows: auto; }
+  .empty--first { grid-template-columns: 1fr; }
+  .empty__ghost { max-width: 220px; grid-auto-rows: 48px; }
+  .empty__copy .btn { width: 100%; }
+  .legend { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .legend__key { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .tile, .tile--m, .tile--w, .tile--l { grid-column: auto; grid-row: auto; }
+  .tile--w { display: flex; }
+  .tile--w .tile__top { flex-direction: row; align-items: baseline; }
+  .tile--l { padding: 22px; }
+  .tile--l .tile__count strong { font-size: 3.5rem; }
+  .tile--l .tile__text { font-size: 1.125rem; }
+  .composer { grid-template-columns: 1fr; }
+  .filters { width: 100%; }
+  .filters__btn { flex: 1; padding: 10px 8px; }
+  .stats { grid-template-columns: 1fr; }
+  .dash-foot__actions, .confirm { width: 100%; }
+  .confirm__q { flex-basis: 100%; }
+  .dash-foot__actions .btn { flex: 1; }
+  .row { grid-template-columns: 1fr; gap: 12px; }
+  .row__count { font-size: 2.125rem; }
+  .capabilities > div { grid-template-columns: 1fr; gap: 4px; }
+  .bar { grid-template-columns: minmax(0, 1fr) 52px; }
+  .hero__cta .btn { width: 100%; }
+}
+
+@media (forced-colors: active) {
+  .tile--h1, .tile--h2, .tile--h3, .tile--h4, .tile--h5, .tile--answered,
+  .legend__step, .preview__cell, .row__heat i, .stat--hue, .bar__fill,
+  .num-badge, .waiting__dot, .swatch { forced-color-adjust: none; }
+  .btn, .tile, .box, .row, .stat, .filters, .composer__field, .legend, .metoo { border-color: CanvasText; }
+  :focus-visible { outline-color: Highlight; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

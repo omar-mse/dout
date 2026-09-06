@@ -183,11 +183,13 @@ img, svg { display: block; }
 /* The wordmark must never wrap or be squeezed; giving the label back to the Ask button
    narrowed the row enough that flex started shrinking the brand instead. */
 .nav__brand { display: flex; align-items: center; flex-shrink: 0; text-decoration: none; color: #ffffff; }
-/* The mark occupies the b's slot in d-o-u-b-t: it sits on the baseline and rises to the
-   ascender, the height a lowercase b would reach, so it reads as the missing letter rather
-   than as a logo parked next to the name. Sized in em so it tracks the wordmark through both
-   nav breakpoints instead of needing its own set of numbers at each one. */
-.nav__mark { display: inline-block; width: 0.6em; height: 0.72em; margin: 0 0.04em; background: var(--yellow); vertical-align: baseline; }
+/* The b is the letter the brand dropped, so it is drawn but not spoken: yellow at a third
+   strength, which disappears into the bar at a glance and resolves into "doubt" up close.
+   Hover and keyboard focus bring it fully up, which is the whole joke landing. The global
+   reduced-motion rule takes the transition out; the colour change stays either way. */
+.nav__mark { color: rgba(255, 225, 77, 0.34); transition: color 160ms ease; }
+.nav__brand:hover .nav__mark,
+.nav__brand:focus-visible .nav__mark { color: var(--yellow); }
 .nav__word { font-family: var(--font-display); font-size: 1.375rem; letter-spacing: 0.02em; white-space: nowrap; }
 .nav__nav { display: contents; }
 .nav__links { display: flex; align-items: center; gap: clamp(20px, 3vw, 40px); list-style: none; margin: 0; padding: 0; }

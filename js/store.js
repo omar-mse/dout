@@ -20,11 +20,11 @@
      case- and space-insensitively, because a professor typing their own subject should not
      have to guess our punctuation. */
   var SUBJECTS = [
-    { id: 'cs201', code: 'CSCI', name: 'Data Structures',  professor: 'Prof. Rahman' },
-    { id: 'ma102', code: 'MATH', name: 'Calculus II',      professor: 'Prof. Iyer' },
-    { id: 'bi130', code: 'BIOL', name: 'Cell Biology',     professor: 'Prof. Okafor' },
-    { id: 'ec220', code: 'ECON', name: 'Microeconomics',   professor: 'Prof. Lindqvist' },
-    { id: 'ps101', code: 'PSYC', name: 'Intro Psychology', professor: 'Prof. Navarro' }
+    { id: 'cs201', code: 'CSCI 201', name: 'Data Structures',  professor: 'Prof. Rahman' },
+    { id: 'ma102', code: 'MATH 102', name: 'Calculus II',      professor: 'Prof. Iyer' },
+    { id: 'bi130', code: 'BIOL 130', name: 'Cell Biology',     professor: 'Prof. Okafor' },
+    { id: 'ec220', code: 'ECON 220', name: 'Microeconomics',   professor: 'Prof. Lindqvist' },
+    { id: 'ps101', code: 'PSYC 101', name: 'Intro Psychology', professor: 'Prof. Navarro' }
   ];
 
   var byId = Object.create(null);

@@ -38,11 +38,12 @@
     return '' +
       '<a class="skip-link" href="#main">Skip to content</a>' +
       '<div class="nav__inner">' +
-        /* The mark is not set beside the name, it stands in for the letter the name is missing:
-           d-o-u-[b]-t. Hidden from assistive tech as a whole, because "dou t" read aloud around
-           a decorative block is not the word — the link's aria-label carries the name instead. */
+        /* The b the brand dropped is still in the wordmark, just faint: at a glance the nav
+           reads "dout", up close (or on hover) it says "doubt". Hidden from assistive tech as
+           a whole, because the name is dout however the letters are painted — the link's
+           aria-label carries it instead. */
         '<a class="nav__brand" href="index.html" aria-label="dout home">' +
-          '<span class="nav__word" aria-hidden="true">dou<span class="nav__mark"></span>t</span>' +
+          '<span class="nav__word" aria-hidden="true">dou<span class="nav__mark">b</span>t</span>' +
         '</a>' +
         '<nav class="nav__nav" aria-label="Main"><ul class="nav__links" id="nav-links">' + links + '</ul></nav>' +
         '<div class="nav__actions">' +

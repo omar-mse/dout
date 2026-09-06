@@ -31,11 +31,6 @@
     var href = subject ? 'feed.html?subject=' + encodeURIComponent(subject.id) + '#ask' : 'feed.html#ask';
     html += '<a class="preview__cell preview__cell--empty" href="' + href + '" style="text-decoration:none;color:inherit">Your<br>doubt</a>';
     grid.innerHTML = html;
-
-    var caption = document.getElementById('preview-caption');
-    if (caption && subject) {
-      caption.textContent = subject.code + ' · ' + subject.name + ' · live from the feed. Stronger colour = more people lost.';
-    }
   }
 
   document.addEventListener('DOMContentLoaded', render);

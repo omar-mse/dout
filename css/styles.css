@@ -163,6 +163,8 @@ img, svg { display: block; }
 .mono { font-family: var(--font-mono); }
 .kicker { font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.15em; text-transform: uppercase; }
 .kicker--boxed { display: inline-block; padding: 6px 10px; border: 2px solid var(--line); }
+/* Same reason as .subject__code: the course code above a board title is data, not a label. */
+#course { font-size: 0.9375rem; letter-spacing: 0.04em; }
 .muted { color: var(--ink-soft); }
 
 .container { width: min(1440px, 100%); margin: 0 auto; padding-left: var(--gutter); padding-right: var(--gutter); }
@@ -710,7 +712,9 @@ img, svg { display: block; }
 }
 .subject:hover { transform: translate(-3px, -3px); box-shadow: var(--shadow); }
 .subject:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--line); }
-.subject__code { padding: 5px 9px; background: #0b0b0b; color: var(--yellow); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+/* The code is the thing people scan the card by, so it is read at body size: mono keeps the
+   tag voice, but 12px at 0.14em tracking pulled "CSE 2011" apart into loose characters. */
+.subject__code { padding: 6px 10px; background: #0b0b0b; color: var(--yellow); font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
 /* Sized so the longest name on the timetable ("Microeconomics") clears a card at the narrowest
    column the grid will build. A display face this wide breaks mid-word rather than overflowing,
    and "MICROECONOMI / CS" is not a subject anybody recognises. */

@@ -34,7 +34,7 @@
       render();
       if (moveFocus) document.getElementById('dash-title').focus();
     } else {
-      /* Locking has to take the subject out of the tab title too. Leaving "BI 130" up there
+      /* Locking has to take the subject out of the tab title too. Leaving "BIOL" up there
          after the dashboard is closed tells the next person at the machine which class this
          key opens, which is the one thing locking was supposed to put away. */
       document.title = 'dout — For professors';

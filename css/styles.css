@@ -413,8 +413,15 @@ img, svg { display: block; }
 .tile--h5 { background: var(--heat-5); color: var(--heat-5-ink); }
 .tile--answered { background: var(--yellow); color: var(--on-yellow); }
 .tile__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.tile__count { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-mono); }
+/* Relative so the outgoing numeral can ride over the incoming one without being in flow: the
+   count roll must not nudge the tile's own layout while it plays. */
+.tile__count { position: relative; display: flex; align-items: baseline; gap: 8px; font-family: var(--font-mono); }
 .tile__count strong { font-size: 3.5rem; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
+/* The outgoing value is a clone of the <strong> above, so every band's and every breakpoint's
+   type size comes with it and the roll never has to restate any of them. Out of flow, never
+   hit-tested, never read aloud. tabular-nums on the original is what lets 9 and 10 sit exactly
+   on top of each other rather than drifting apart mid-roll. */
+.tile__count strong.count-ghost { position: absolute; left: 0; top: 0; pointer-events: none; }
 .tile__count span { font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; }
 .tile__text { font-size: 1.125rem; line-height: 1.45; font-weight: 500; overflow-wrap: anywhere; }
 .tile__bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
@@ -800,12 +807,53 @@ img, svg { display: block; }
   .empty__copy .btn { width: 100%; }
   .legend { align-items: flex-start; flex-direction: column; gap: 12px; }
   .legend__key { align-items: flex-start; flex-direction: column; gap: 10px; }
+  /* One column, so area stops ranking the board — and what was left behind was worse than
+     nothing. Height followed the length of the question, so at 390px the 31-me-too leader
+     rendered 248px tall while a 19-me-too doubt with a 240-character question rendered 381px.
+     The phone was still shipping the bug the desktop board fixed when size stopped following
+     text length (see sizeClass in js/store.js): the wordy minor doubt outranking the short
+     urgent one, only here it outranked it by half again.
+
+     Extent along the scroll axis is the phone's version of area: how much screen a doubt takes
+     as it goes past the thumb. Two things carry it. The count's type size is fixed per band and
+     cannot be moved by how long the question is, so it is the channel that carries the
+     guarantee — four steps, one per band, readable at scrolling speed. min-height is the
+     rhythm: it sets a floor per band so a hot doubt can never again be the shortest tile on
+     the board. Scaling the question text down the ramp keeps a wordy cold doubt from growing
+     back past a hot one; it cannot rule that out entirely at 240 characters, which is why the
+     numeral and not the height is the thing that has to be true. */
   .tile, .tile--m, .tile--w, .tile--l { grid-column: auto; grid-row: auto; }
   .tile--w { display: flex; }
   .tile--w .tile__top { flex-direction: row; align-items: baseline; }
-  .tile--l { padding: 22px; }
-  .tile--l .tile__count strong { font-size: 3.5rem; }
-  .tile--l .tile__text { font-size: 1.125rem; }
+  /* The wide tile drops its two-column grid here and inherits the column flex from .tile, but
+     the grid placement it no longer uses came with it: align-self:end resolved against the
+     cross axis, so the meta and Me too row shrank to its content and sat hard right — 219px
+     starting at x=111 while every other band ran the full 285px from x=45. The board's second
+     doubt was the only tile laid out differently. */
+  .tile--w .tile__bottom, .tile--w .reply { align-self: stretch; }
+
+  /* The leader clears the longest possible question in the band below it, so the top of the
+     board is the top of the board however the questions happen to be worded. Its own three
+     children stop sharing the slack: count, question, then Me too on the bottom edge. On a
+     2x2 desktop block space-between reads as composition; in one tall column it read as the
+     question floating in the middle of an empty rectangle, and the taller floor here would
+     only have made more of it. */
+  .tile--l { min-height: 340px; padding: 22px; justify-content: flex-start; }
+  .tile--l .tile__bottom { margin-top: auto; }
+  .tile--l .tile__count strong { font-size: 4.25rem; }
+  .tile--l .tile__text { font-size: 1.375rem; }
+
+  .tile--w { min-height: 236px; }
+  .tile--w .tile__count strong { font-size: 3.25rem; }
+  .tile--w .tile__text { font-size: 1.1875rem; }
+
+  .tile--m { min-height: 184px; }
+  .tile--m .tile__count strong { font-size: 2.625rem; }
+  .tile--m .tile__text { font-size: 1rem; }
+
+  .tile--s { min-height: 136px; }
+  .tile--s .tile__count strong { font-size: 2rem; }
+  .tile--s .tile__text { font-size: 0.9375rem; }
   .composer { grid-template-columns: 1fr; }
   .filters { width: 100%; }
   .filters__btn { flex: 1; padding: 10px 8px; }
@@ -818,6 +866,17 @@ img, svg { display: block; }
   .capabilities > div { grid-template-columns: 1fr; gap: 4px; }
   .bar { grid-template-columns: minmax(0, 1fr) 52px; }
   .hero__cta .btn { width: 100%; }
+}
+
+/* Small phones again, and it has to come after the 640 block rather than join the 400 one
+   above it: same specificity, so the later rule is the one that wins.
+
+   Every band's question wraps to more lines as the column narrows, but the longest question
+   wins the most rows from it. At 360px a 240-character band-3 doubt reached 346px and at 320px
+   369px, both back over the leader's 340 floor. A floor has to clear the worst case at the
+   narrowest width, not the common case at the widest. */
+@media (max-width: 400px) {
+  .tile--l { min-height: 376px; }
 }
 
 @media (forced-colors: active) {

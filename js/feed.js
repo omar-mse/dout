@@ -109,8 +109,17 @@
     var doubts = sorted();
     var max = store.maxCount(store.getDoubts());
     /* Only the very first paint runs the entrance stagger. A re-render after a tap or a filter
-       change must not blank the board and replay it. */
-    if (!firstRender) grid.classList.add('is-settled');
+       change must not blank the board and replay it.
+
+       The second condition is the one that matters. The entrance is an enhancement and must
+       never be the thing that makes content visible: `rise` starts at opacity 0 and is declared
+       with fill `both`, so its backwards fill paints every tile transparent until the animation
+       actually runs — and a hidden tab never runs it, because Chrome does not advance animation
+       timelines in the background. Measured on a backgrounded tab: thirteen tiles, playState
+       "running", currentTime 0, computed opacity 0. The whole board was blank. Restoring a
+       session, opening a subject in a background tab, and any prerender or screenshot pass all
+       land in exactly that state. If nobody is looking, skip the entrance and paint the board. */
+    if (!firstRender || document.hidden) grid.classList.add('is-settled');
     firstRender = false;
 
     if (!doubts.length) {
@@ -131,6 +140,14 @@
         '<span class="grid__more-meta">' + page.length + ' of ' + doubts.length + ' doubts</span></div>';
     }
     grid.innerHTML = html;
+    /* Hand the board over to interaction motion once the entrance has played out. A finished CSS
+       animation declared with fill `both` goes on applying its end state forever, so leaving it
+       declared would park a filled transform underneath every FLIP for the rest of the session.
+       Settling the grid drops the declaration instead of racing it. */
+    if (!grid.classList.contains('is-settled')) {
+      var lastDelay = Math.min(page.length - 1, 12) * 45;
+      setTimeout(function () { grid.classList.add('is-settled'); }, 500 + lastDelay + 60);
+    }
     renderLegend();
   }
 
@@ -138,14 +155,99 @@
      Size follows the count now, so a tap that pushes a doubt into the next band grows its tile
      here too; leaving the old span behind would let colour and size disagree until the next
      full render. */
-  function refreshHeat() {
+  /* The motion below is driven from JS, so the stylesheet's prefers-reduced-motion rule cannot
+     reach it: that rule can only switch off animations and transitions the stylesheet itself
+     declared. Ask the platform directly instead, and ask on every tap rather than caching the
+     answer, because the setting can change while the page is open. */
+  function stillness() {
+    return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  var EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
+
+  /* The count is the product's whole argument and it used to change by teleporting. It rolls
+     now: the old value leaves in the direction the number is travelling and the new one arrives
+     from behind it, so "fourteen became fifteen" is something a student watches happen rather
+     than something they notice afterwards. Up when the room grows, down when they take theirs
+     back.
+
+     The two values crossfade rather than running under a mask. .tile__count strong sits at
+     line-height 0.9, so a box tight enough to clip the roll would shave the tops off Archivo
+     Black's digits at every band and every breakpoint; a fade needs no clip to read cleanly. */
+  function rollCount(el, next, up) {
+    var prev = el.textContent;
+    if (prev === next) return;
+    el.textContent = next;
+
+    var host = el.parentNode;
+    /* Swept before the early return as well as before a new roll: a second tap that lands mid
+       roll, or motion being switched off between one tap and the next, must not strand a stale
+       value on top of the live one. */
+    host.querySelectorAll('.count-ghost').forEach(function (g) { g.remove(); });
+    if (stillness() || !el.animate) return;
+
+    var ghost = el.cloneNode(false);
+    ghost.textContent = prev;
+    ghost.className = (el.className ? el.className + ' ' : '') + 'count-ghost';
+    /* Never let the next refresh mistake the ghost for the live numeral. */
+    ghost.removeAttribute('data-count');
+    ghost.setAttribute('aria-hidden', 'true');
+    host.appendChild(ghost);
+
+    var dir = up ? -1 : 1;
+    var drop = function () { ghost.remove(); };
+    var out = ghost.animate([
+      { transform: 'translateY(0)', opacity: 1 },
+      { transform: 'translateY(' + (dir * 0.45) + 'em)', opacity: 0 }
+    ], { duration: 240, easing: EASE, fill: 'forwards' });
+    /* Three ways out, because the event alone is not dependable. onfinish covers the ordinary
+       case and oncancel the interrupted one, but an animation that completes while the tab is in
+       the background reaches "finished" without ever delivering the event — observed here, with
+       the handler still attached and the ghost still in the DOM. The timer owes nothing to event
+       delivery, so it is the one that guarantees the ghost goes. Removing it early costs nothing:
+       the live numeral already holds the new value. */
+    out.onfinish = out.oncancel = drop;
+    setTimeout(drop, 320);
+    el.animate([
+      { transform: 'translateY(' + (-dir * 0.45) + 'em)', opacity: 0 },
+      { transform: 'none', opacity: 1 }
+    ], { duration: 300, easing: EASE });
+  }
+
+  /* A tap that pushes a doubt into the next band changes that tile's span, and every tile after
+     it reflows around the new shape. Painted straight, the board teleports into its new
+     arrangement: the one thing worth watching, the composition rearranging itself around what
+     the room just said, happens between two frames.
+
+     FLIP plays it back. Measure where every tile was, let the layout change, put each one back
+     where it started with a transform, then release it. Transforms only, so the browser lays out
+     once and the animation runs on the compositor rather than re-running layout every frame.
+
+     Returns whether anything actually moved, which is how the caller knows the board has already
+     spoken for this tap.
+
+     `alsoMutate` runs inside the measure window, and anything that changes layout above the grid
+     belongs in it. Dismissing the first-run hint used to happen after this function had already
+     measured and started: the hint is a ~103px box above the board, so every tile's inverse
+     transform came out 103px wrong and the board jumped by exactly that much while the reflow
+     played. It fired on a student's first ever tap, which is the one time the hint is on screen.
+     Folded in here, the board slides up into the space the hint vacates as part of the same
+     move. */
+  function refreshHeat(up, alsoMutate) {
     var all = store.getDoubts();
     var max = store.maxCount(all);
+    var moving = !stillness();
     /* One pass over the painted tiles rather than a querySelector per doubt: the board holds
        at most PAGE tiles while the lecture can hold MAX_DOUBTS, so the old loop searched the
        DOM 400 times to touch 120 elements on every tap. */
     var els = Object.create(null);
-    grid.querySelectorAll('.tile').forEach(function (el) { els[el.dataset.id] = el; });
+    var before = Object.create(null);
+    grid.querySelectorAll('.tile').forEach(function (el) {
+      els[el.dataset.id] = el;
+      if (!moving) return;
+      var r = el.getBoundingClientRect();
+      before[el.dataset.id] = { x: r.left, y: r.top };
+    });
     all.forEach(function (d) {
       var el = els[d.id];
       if (!el || d.answered) return;
@@ -154,9 +256,31 @@
       el.dataset.size = 'tile--' + store.sizeClass(d.count, max);
       el.className = 'tile ' + el.dataset.size + base + (el.classList.contains('is-pumping') ? ' is-pumping' : '');
       var c = el.querySelector('[data-count]');
-      if (c) c.textContent = store.formatCount(d.count);
+      if (c) rollCount(c, store.formatCount(d.count), up);
     });
+    if (alsoMutate) alsoMutate();
     renderLegend();
+    if (!moving) return false;
+
+    /* Every measurement first, then every animation: one layout pass for the whole board
+       instead of one per tile. */
+    var moves = [];
+    grid.querySelectorAll('.tile').forEach(function (el) {
+      var was = before[el.dataset.id];
+      if (!was || !el.animate) return;
+      var r = el.getBoundingClientRect();
+      var dx = was.x - r.left, dy = was.y - r.top;
+      /* Sub-pixel drift is not movement; animating it would only cost a compositor layer. */
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      moves.push([el, dx, dy]);
+    });
+    moves.forEach(function (m) {
+      m[0].animate([
+        { transform: 'translate(' + m[1] + 'px, ' + m[2] + 'px)' },
+        { transform: 'none' }
+      ], { duration: 460, easing: EASE });
+    });
+    return moves.length > 0;
   }
 
   function hintSeen() {
@@ -199,12 +323,17 @@
     btn.innerHTML = (res.pressed ? ui.icons.check : ui.icons.hand) +
       '<span aria-hidden="true">Me too</span>' + btn.querySelector('.sr-only').outerHTML;
     var tile = btn.closest('.tile');
+    /* Cleared before the refresh so it is not carried across into the rebuilt class list. */
     tile.classList.remove('is-pumping');
-    void tile.offsetWidth;
-    tile.classList.add('is-pumping');
-    refreshHeat();
+    var reflowed = refreshHeat(res.pressed, dismissHint);
+    /* The pulse is for taps that change nothing but the number. When the tap crosses a band the
+       board is already reflowing around this tile and the count is already rolling inside it, and
+       a third motion competing for the same instant reads as noise rather than as feedback. */
+    if (!reflowed) {
+      void tile.offsetWidth;
+      tile.classList.add('is-pumping');
+    }
     renderNotice();
-    dismissHint();
     /* The aha moment, said out loud exactly once: you were never the only one. */
     if (!res.pressed) ui.toast('Taken back.');
     else if (firstEver && res.count > 1) ui.toast('Counted. ' + store.formatCount(res.count - 1) + ' others were stuck here too.');

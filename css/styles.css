@@ -349,8 +349,15 @@ img, svg { display: block; }
 .composer {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: stretch;
   margin-top: 36px; padding: 20px; background: #0b0b0b; color: #ffffff;
+  /* The border is carried in both themes so the composer is the same size in both. Dark mode is
+     the theme that needs it visible — a #1e1e1e panel on a #141414 ground has nothing else to
+     separate it — but declaring it only there made the box 6px taller in dark than in light and
+     shifted the entire board down by exactly that much on every toggle. In light mode --line is
+     the panel's own black, so the border is already invisible and costs nothing but the space it
+     now always occupies. */
+  border: var(--border);
 }
-:root[data-theme="dark"] .composer { background: #1e1e1e; border: var(--border); }
+:root[data-theme="dark"] .composer { background: #1e1e1e; }
 .composer__field { display: flex; flex-direction: column; background: #ffffff; color: #0b0b0b; border: 3px solid #0b0b0b; }
 :root[data-theme="dark"] .composer__field { background: #f4f1ea; }
 .composer__input {
@@ -885,6 +892,13 @@ img, svg { display: block; }
   .num-badge, .waiting__dot, .swatch { forced-color-adjust: none; }
   .btn, .tile, .box, .row, .stat, .filters, .composer__field, .legend, .metoo { border-color: CanvasText; }
   :focus-visible { outline-color: Highlight; }
+}
+
+/* Held for exactly the frame a theme or palette swap lands in (see instantly() in js/theme.js).
+   Pseudo-elements included: the swap has to arrive all at once or the parts of it that animate
+   trail the parts that do not. */
+:root[data-theming], :root[data-theming] *, :root[data-theming] *::before, :root[data-theming] *::after {
+  transition: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

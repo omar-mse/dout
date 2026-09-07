@@ -30,6 +30,19 @@
     return doubts;
   }
 
+  /* Size is the ranking channel, so it only carries meaning on a board that is ranked. "Most me
+     too" and "Answered" both sort by count, so their spans arrive in descending order and tile
+     the grid exactly: measured 0 empty cells. "Newest" sorts by time while size still came from
+     the count, so the spans arrived scrambled — s,m,s,s,w,s,l,m,m,s,s,s,s — and auto-placement
+     skipped every cell a wide or tall tile could not fit, leaving four holes mid-board.
+
+     Dense packing is not the way out: it reorders, and on this board reading order is the
+     ranking (see the note on .grid). Uniform tiles are. Nothing is lost by it, because colour
+     still carries the heat and colour is the only channel the legend ever claims. */
+  function sizeFor(d, max) {
+    return 'tile--' + (filter === 'new' ? 's' : store.sizeClass(d.count, max));
+  }
+
   function tileHtml(d, max, i) {
     var step = store.heatStep(d.count, max);
     var pressed = store.hasMeToo(d.id);
@@ -66,7 +79,7 @@
         '<span class="sr-only">Me too: ' + ui.esc(d.text) + '</span></button>';
       bottom = '<div class="tile__bottom"><span class="tile__meta">Anon · ' + store.timeAgo(d.createdAt) + '</span>' + btn + '</div>';
     }
-    var size = 'tile--' + store.sizeClass(d.count, max);
+    var size = sizeFor(d, max);
     return '<article class="tile ' + size + ' ' + cls + '" data-id="' + d.id + '" data-size="' + size + '" style="--i:' + i + '" aria-labelledby="' + textId + '">' +
       top + '<p class="tile__text" id="' + textId + '" dir="auto">' + ui.esc(d.text) + '</p>' + bottom + '</article>';
   }
@@ -253,7 +266,7 @@
       if (!el || d.answered) return;
       var step = store.heatStep(d.count, max);
       var base = d.mine && !d.count ? ' tile--waiting' : (step ? ' tile--h' + step : '');
-      el.dataset.size = 'tile--' + store.sizeClass(d.count, max);
+      el.dataset.size = sizeFor(d, max);
       el.className = 'tile ' + el.dataset.size + base + (el.classList.contains('is-pumping') ? ' is-pumping' : '');
       var c = el.querySelector('[data-count]');
       if (c) rollCount(c, store.formatCount(d.count), up);

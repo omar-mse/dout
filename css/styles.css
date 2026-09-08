@@ -318,6 +318,39 @@ img, svg { display: block; }
 .preview__cell--empty { border: 3px dashed var(--line); align-items: center; justify-content: center; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; }
 .preview__caption { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
+/* ---------- Room figure ----------
+   The lecture hall as 24 seats, drawn in the same flat squares the board itself uses: an
+   outlined seat is a student who looks fine, a filled one is a student who is lost, yellow is
+   the one who asked. Shown twice with the seats in identical positions, so the only thing that
+   changes between the two panels is what you can see — which is the whole claim.
+
+   The graphic is aria-hidden and the caption under each panel carries the reading in words,
+   the same division of labour .bar uses on the problem page. */
+.roomfig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; max-width: 780px; margin-top: 28px; }
+.roomfig__panel { display: flex; flex-direction: column; gap: 14px; padding: 20px; background: var(--tile); border: var(--border); box-shadow: var(--shadow); }
+.roomfig__h { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.roomfig__svg { display: block; width: 100%; max-width: 340px; height: auto; }
+/* The problem page sits in a reading column; the landing band runs with its full-width siblings. */
+.roomfig--wide { max-width: none; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); }
+/* Pinned to the bottom so two captions of different lengths still leave the panels level. */
+.roomfig__cap { margin-top: auto; font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); }
+.roomfig__cap strong { color: var(--ink); font-weight: 700; }
+.seat { fill: var(--tile); stroke: var(--line); stroke-width: 3; }
+.seat--stuck { fill: var(--heat-4); }
+.seat--asked { fill: var(--yellow); }
+.seat__q { fill: var(--heat-4-ink); font-family: var(--font-mono); font-size: 19px; font-weight: 700; }
+
+/* The professor's half of the landing band: the same room after dout, as the ranked list their
+   dashboard actually shows. Deliberately not the tile board — the hero already owns that, and
+   the dashboard is the one screen the landing page otherwise never shows. */
+.rankfig { display: flex; flex-direction: column; gap: 16px; }
+.rankfig__row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: baseline; }
+.rankfig__n { font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
+.rankfig__n small { display: block; margin-top: 6px; font-size: 0.5625rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-soft); }
+.rankfig__q { display: block; font-size: 0.875rem; line-height: 1.4; font-weight: 500; }
+.rankfig__bar { display: block; height: 12px; margin-top: 8px; border: 2px solid var(--line); background: var(--tile); }
+.rankfig__bar i { display: block; height: 100%; background: var(--hue); }
+
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
 .step { display: flex; flex-direction: column; gap: 14px; }
 .step h3 { font-size: 1.375rem; line-height: 1.1; }
@@ -547,6 +580,26 @@ img, svg { display: block; }
 .tile--waiting .tile__bottom { margin-top: auto; }
 /* No count to fill it yet, so it does not claim the extra row. It earns the height when the room answers. */
 .tile.tile--waiting.tile--m, .tile.tile--waiting.tile--l { grid-row: auto; }
+
+/* Pinned: your doubt, posted, still at zero. It is outside the ranking, so it takes the one
+   span that carries no rank — the whole row — and lays its content out along it. This is also
+   what keeps the board tiling exactly: the pinned block always ends on a row boundary, so the
+   ranked tiles below it still arrive as an unbroken descending run of spans. */
+.tile--pin {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
+  grid-template-rows: auto auto;
+  align-content: center;
+  column-gap: 28px; row-gap: 6px;
+}
+/* Laid out along the row rather than down it. The row is 190px whatever sits in it, so stacking
+   a tag, a line of text and two labels down the left edge left most of the strip empty; reading
+   left to right, the strip is a banner instead of a tall tile with a gap under it. */
+.tile--pin .tile__top { grid-column: 1; grid-row: 1 / -1; align-self: center; }
+.tile--pin .tile__text { grid-column: 2; grid-row: 1 / -1; align-self: center; }
+.tile--pin .waiting { grid-column: 3; grid-row: 1; justify-self: end; }
+.tile--pin .tile__bottom { grid-column: 3; grid-row: 2; justify-self: end; margin-top: 0; }
 .waiting {
   display: flex; align-items: center; gap: 10px;
   font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-soft);
@@ -757,12 +810,82 @@ img, svg { display: block; }
 }
 .backlink:hover { color: var(--ink); }
 
+/* A row arriving in the next-class agenda, washed in the colour this site already uses for
+   "the professor has dealt with this". Fades out rather than staying, because the highlight
+   marks the arrival, not a state. */
+.agenda li.is-added { animation: agenda-in 640ms var(--ease-pop); }
+.agenda li.is-added .agenda__meta { animation: agenda-in-meta 640ms var(--ease-pop); }
+/* Held solid for the first 70% rather than faded from the start. Interpolating yellow-with-ink
+   straight back to panel-with-cream spends most of its life on a muddy olive carrying grey
+   text at roughly 2:1, which is unreadable in exactly the window the professor is meant to be
+   reading it. Holding the highlight puts black on yellow (15:1) under the eye for ~450ms and
+   compresses the crossfade into a ~190ms tail. The spread stands in for padding the list item
+   does not have, so the block reads as a highlighter mark rather than a tinted line. */
+@keyframes agenda-in {
+  0%, 70% { background-color: var(--yellow); color: var(--on-yellow); box-shadow: 0 0 0 5px var(--yellow); }
+  100% { background-color: transparent; color: var(--ink); box-shadow: 0 0 0 5px transparent; }
+}
+@keyframes agenda-in-meta {
+  0%, 70% { color: var(--on-yellow); }
+  100% { color: var(--ink-soft); }
+}
+
+/* ---------- Reveal ----------
+   One idea, three surfaces: the count fills in what silence was hiding. The seat map fills,
+   the ranked bars grow, the landing board develops. Nothing else on the site animates on
+   scroll, because a reveal on every section is scaffolding rather than an argument.
+
+   Armed and released from JS (see reveal() in js/ui.js), never from CSS alone. The two classes
+   are mutually exclusive on purpose: `reveal-armed` holds the hidden state only while JS is
+   alive to release it, and `is-revealed` replaces it so the animation's backwards fill is the
+   only thing hiding anything. Both are stripped once the wave has played, so the finished
+   state is plain CSS with no animation left declared over it. Markup with no JS, a hidden tab,
+   or reduced motion never gets armed at all and simply renders finished. */
+[data-reveal].reveal-armed .seat-g,
+[data-reveal].reveal-armed .rankfig__bar i { opacity: 0; }
+.preview__grid.reveal-armed .preview__cell { background-color: var(--tile); color: var(--ink); }
+
+/* fill-box so each seat scales about its own centre rather than the whole 280x184 canvas. */
+.seat-g { transform-box: fill-box; transform-origin: center; }
+[data-reveal].is-revealed .seat-g {
+  animation: seat-in 300ms var(--ease-pop) backwards;
+  animation-delay: calc(var(--d, 0) * 26ms);
+}
+@keyframes seat-in { from { opacity: 0; transform: scale(0.55); } }
+
+/* scaleX rather than width: the bar is inside a bordered track, so growing the box would
+   relayout it on every frame for the same picture. */
+.rankfig__bar i { transform-origin: left center; }
+[data-reveal].is-revealed .rankfig__bar i {
+  animation: bar-in 560ms var(--ease-pop) backwards;
+  animation-delay: calc(140ms + var(--d, 0) * 90ms);
+}
+@keyframes bar-in { from { transform: scaleX(0); } }
+
+/* The board takes its heat in reading order rather than fading in. Fading was the reflex and
+   it was wrong twice: the grid's own background is --line, so every cell that had not arrived
+   yet showed a slab of raw cream in dark mode (raw black in light), and alpha says "loading"
+   where this board's whole subject is a count arriving. Each cell is painted the entire time
+   and travels from the neutral tile to the colour its count earned, which is the same sentence
+   the tiles, the seats and the bars are all saying. */
+.preview__grid.is-revealed .preview__cell {
+  animation: cell-heat 420ms var(--ease-pop) backwards;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+@keyframes cell-heat { from { background-color: var(--tile); color: var(--ink); } }
+
+/* It is a link to the composer and had no affordance at all. Faster than the .preview__cell
+   heat crossfade it would otherwise inherit, because this one answers a pointer. */
+.preview__cell--empty { transition: background-color 160ms ease, color 160ms ease; }
+.preview__cell--empty:hover, .preview__cell--empty:focus-visible { background: var(--yellow); color: var(--on-yellow); }
+
 @media (max-width: 1100px) {
   .hero { grid-template-columns: 1fr; }
   .preview { max-width: 520px; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(170px, auto); }
   .steps { grid-template-columns: 1fr; }
   .band { grid-template-columns: 1fr; gap: 16px; }
+  .roomfig--wide { grid-template-columns: 1fr; }
   .dash { grid-template-columns: 1fr; }
   .agenda { position: static; }
 }
@@ -830,7 +953,8 @@ img, svg { display: block; }
      back past a hot one; it cannot rule that out entirely at 240 characters, which is why the
      numeral and not the height is the thing that has to be true. */
   .tile, .tile--m, .tile--w, .tile--l { grid-column: auto; grid-row: auto; }
-  .tile--w { display: flex; }
+  .tile--w, .tile--pin { display: flex; }
+  .tile--pin { min-height: 0; }
   .tile--w .tile__top { flex-direction: row; align-items: baseline; }
   /* The wide tile drops its two-column grid here and inherits the column flex from .tile, but
      the grid placement it no longer uses came with it: align-self:end resolved against the
@@ -871,6 +995,7 @@ img, svg { display: block; }
   .row { grid-template-columns: 1fr; gap: 12px; }
   .row__count { font-size: 2.125rem; }
   .capabilities > div { grid-template-columns: 1fr; gap: 4px; }
+  .roomfig { grid-template-columns: 1fr; }
   .bar { grid-template-columns: minmax(0, 1fr) 52px; }
   .hero__cta .btn { width: 100%; }
 }
@@ -889,7 +1014,8 @@ img, svg { display: block; }
 @media (forced-colors: active) {
   .tile--h1, .tile--h2, .tile--h3, .tile--h4, .tile--h5, .tile--answered,
   .legend__step, .preview__cell, .row__heat i, .stat--hue, .bar__fill,
-  .num-badge, .waiting__dot, .swatch { forced-color-adjust: none; }
+  .num-badge, .waiting__dot, .swatch,
+  .seat, .seat--stuck, .seat--asked, .rankfig__bar i { forced-color-adjust: none; }
   .btn, .tile, .box, .row, .stat, .filters, .composer__field, .legend, .metoo { border-color: CanvasText; }
   :focus-visible { outline-color: Highlight; }
 }

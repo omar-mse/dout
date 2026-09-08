@@ -198,6 +198,65 @@
     toastTimer = setTimeout(hideToast, action ? 8000 : 1800);
   }
 
+  /* ---------- reveal ----------
+     The one scroll-triggered move on the site: the seat map filling in, the ranked bars
+     growing, the landing board developing. All three say the same thing the product says, so
+     they are one idea rather than a reveal bolted onto every section.
+
+     The hidden state lives in a class this function adds, never in the stylesheet's resting
+     state. Nothing is armed unless motion is wanted AND this code is alive to release it, so
+     markup with no JS, a prerender, a headless screenshot, or reduced motion all render the
+     finished figure instead of an empty box. Both classes come off once the wave has played:
+     a finished animation declared over an element is a trap the feed already learned about
+     (see the note on is-settled in js/feed.js). */
+  function wantsMotion() {
+    try {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    } catch (e) { /* no matchMedia: fall through and let the stylesheet decide */ }
+    return !!window.IntersectionObserver && !document.hidden;
+  }
+
+  function reveal(el) {
+    if (!el || !wantsMotion() || el.dataset.revealed) return;
+    el.dataset.revealed = '1';
+    el.classList.add('reveal-armed');
+
+    var settled = false;
+    function settle() {
+      if (settled) return;
+      settled = true;
+      el.classList.remove('reveal-armed', 'is-revealed');
+    }
+
+    /* The observer is an optimisation, never the thing content depends on. Measured: arm an
+       element the observer then never reports on (a tab that is not rendering, a container
+       that never intersects) and the seats stay at opacity 0 for the life of the page, so the
+       revealed panel reads as the silent one and the figure argues the opposite of its own
+       caption. Whatever happens, the figure is finished within a few seconds. */
+    var failsafe = setTimeout(function () { io.disconnect(); settle(); }, 8000);
+
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i += 1) {
+        if (!entries[i].isIntersecting) continue;
+        clearTimeout(failsafe);
+        io.disconnect();
+        /* Backgrounded between arming and arriving: animations will not advance, so hand the
+           element its finished state rather than leaving it holding an empty one. */
+        if (document.hidden) { settle(); return; }
+        el.classList.remove('reveal-armed');
+        el.classList.add('is-revealed');
+        /* Longer than the slowest wave (17 seats x 26ms + 300ms), so nothing is cut short. */
+        setTimeout(settle, 1400);
+        return;
+      }
+    }, { threshold: 0.1, rootMargin: '0px 0px -6% 0px' });
+
+    io.observe(el);
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) { io.disconnect(); settle(); }
+    });
+  }
+
   function renderFooter() {
     return '<div class="footer"><div>dout · DesignAthon 2026</div>' +
       '<nav aria-label="Footer"><ul>' +
@@ -205,11 +264,13 @@
       '</ul></nav></div>';
   }
 
-  window.MeTooUI = { icons: ICONS, esc: esc, toast: toast };
+  window.MeTooUI = { icons: ICONS, esc: esc, toast: toast, reveal: reveal };
 
   document.addEventListener('DOMContentLoaded', function () {
     var foot = document.querySelector('[data-footer]');
     if (foot) foot.innerHTML = renderFooter();
+
+    document.querySelectorAll('[data-reveal]').forEach(reveal);
 
     var nav = document.querySelector('.nav');
     if (!nav) return;

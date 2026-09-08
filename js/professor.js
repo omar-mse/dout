@@ -121,7 +121,7 @@
       agenda.innerHTML = '<div class="agenda__empty">Nothing ticked yet.</div>';
     } else {
       agenda.innerHTML = '<ol>' + cover.map(function (d) {
-        return '<li dir="auto">' + ui.esc(d.text) + ' <span class="agenda__meta">· ' + store.formatCount(d.count) + ' me too</span></li>';
+        return '<li dir="auto" data-id="' + d.id + '">' + ui.esc(d.text) + ' <span class="agenda__meta">· ' + store.formatCount(d.count) + ' me too</span></li>';
       }).join('') + '</ol>';
     }
     document.getElementById('copy-btn').disabled = !cover.length;
@@ -297,7 +297,16 @@
     });
     ranked.addEventListener('change', function (e) {
       var cb = e.target.closest('[data-cover]');
-      if (cb) { store.setCover(cb.dataset.cover, cb.checked); render(); }
+      if (!cb) return;
+      store.setCover(cb.dataset.cover, cb.checked);
+      render();
+      /* The tick happens in the ranked column and the result lands in a panel on the other
+         side of the page, so without this the only acknowledgement is a list the professor
+         is not looking at silently gaining a row. */
+      if (cb.checked) {
+        var landed = document.querySelector('#agenda li[data-id="' + cb.dataset.cover + '"]');
+        if (landed) landed.classList.add('is-added');
+      }
     });
 
     /* A student asked in another tab while the dashboard sat open. Repaint, but never blow

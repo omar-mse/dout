@@ -12,6 +12,8 @@
     }, null);
   }
 
+  var revealed = false;
+
   function render() {
     var grid = document.getElementById('preview');
     if (!grid) return;
@@ -20,17 +22,22 @@
     var doubts = store.getDoubts().sort(function (a, b) { return b.count - a.count; });
     var max = store.maxCount(doubts);
     var top = doubts.slice(0, 8);
-    var html = top.map(function (d) {
+    /* --i is the cell's place in the entrance wave, so the board develops in reading order. */
+    var html = top.map(function (d, i) {
       var cls = d.answered ? 'tile--answered' : (store.heatStep(d.count, max) ? 'tile--h' + store.heatStep(d.count, max) : '');
       var head = d.answered
         ? '<span class="preview__count preview__count--word">Answered</span>'
         : '<span class="preview__count">' + store.formatCount(d.count) + '</span>';
-      return '<div class="preview__cell ' + cls + '">' + head + '<span class="preview__label" dir="auto">' + ui.esc(d.text) + '</span></div>';
+      return '<div class="preview__cell ' + cls + '" style="--i:' + i + '">' + head + '<span class="preview__label" dir="auto">' + ui.esc(d.text) + '</span></div>';
     }).join('');
-    while (top.length < 8) { html += '<div class="preview__cell"></div>'; top.push(null); }
+    var n = top.length;
+    while (n < 8) { html += '<div class="preview__cell" style="--i:' + n + '"></div>'; n += 1; }
     var href = subject ? 'feed.html?subject=' + encodeURIComponent(subject.id) + '#ask' : 'feed.html#ask';
-    html += '<a class="preview__cell preview__cell--empty" href="' + href + '" style="text-decoration:none;color:inherit">Your<br>doubt</a>';
+    html += '<a class="preview__cell preview__cell--empty" href="' + href + '" style="--i:8;text-decoration:none;color:inherit">Your<br>doubt</a>';
     grid.innerHTML = html;
+    /* Only the first paint earns the entrance. A repaint driven by another tab's me too must
+       not blank the board and replay it, the same rule the feed grid follows. */
+    if (!revealed) { revealed = true; ui.reveal(grid); }
   }
 
   document.addEventListener('DOMContentLoaded', render);

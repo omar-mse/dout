@@ -19,12 +19,16 @@
     if (filter === 'answered') doubts = doubts.filter(function (d) { return d.answered; });
     if (filter === 'new') doubts.sort(function (a, b) { return b.createdAt - a.createdAt; });
     else doubts.sort(function (a, b) { return b.count - a.count || b.createdAt - a.createdAt; });
-    /* Your own open doubts ride at the top of the board. A doubt you just posted starts at zero,
-       so under "Most me too" it would land off-screen at the bottom, which is exactly the moment
-       you most need to see it. The "Yours" tag says why it is there, so the ranking still reads true. */
+    /* A doubt you just posted rides at the top of the board. It starts at zero, so under "Most
+       me too" it would land off-screen at the bottom, which is exactly the moment you most need
+       to see it. The "Yours" tag says why it is there, so the ranking still reads true.
+
+       Scoped to doubts with no me toos, which is the whole reason the pin exists. Pinning your
+       own doubts once the room has answered them used to hold a 31-me-too doubt out of the
+       ranking it was winning, and put a tile at the top whose size disagreed with its position. */
     if (filter !== 'answered') {
       doubts.sort(function (a, b) {
-        return (b.mine && !b.answered ? 1 : 0) - (a.mine && !a.answered ? 1 : 0);
+        return (pinned(b) ? 1 : 0) - (pinned(a) ? 1 : 0);
       });
     }
     return doubts;
@@ -39,8 +43,22 @@
      Dense packing is not the way out: it reorders, and on this board reading order is the
      ranking (see the note on .grid). Uniform tiles are. Nothing is lost by it, because colour
      still carries the heat and colour is the only channel the legend ever claims. */
+  /* Posted, and the room has not answered yet: outside the ranking rather than at the bottom
+     of it. Both the pin above and the full-width span below key off this one predicate, so the
+     board's order and its geometry can never disagree about which doubts are ranked. */
+  function pinned(d) {
+    return !!(d.mine && !d.answered && !d.count);
+  }
+
   function sizeFor(d, max) {
-    return 'tile--' + (filter === 'new' ? 's' : store.sizeClass(d.count, max));
+    if (filter === 'new') return 'tile--s';
+    /* A doubt with no count has no rank, so it must not take a rank-shaped span. Measured: one
+       posted doubt rendered as a 1x1 in front of the leader's 2x2 left three empty cells, two
+       of them mid-board, which is the same scrambled-span failure described above arriving by
+       a different route. Spanning the full row ends the pinned block on a row boundary and
+       hands the ranked tail an untouched grid. */
+    if (pinned(d)) return 'tile--pin';
+    return 'tile--' + store.sizeClass(d.count, max);
   }
 
   function tileHtml(d, max, i) {
@@ -381,7 +399,17 @@
     renderNotice();
     var el = grid.querySelector('[data-id="' + d.id + '"]');
     if (el) {
-      el.classList.add('is-new');
+      /* Same rule the board entrance follows: `rise` is declared with fill `both`, so its
+         backwards fill paints the tile transparent and 18px low until the animation actually
+         runs, and a hidden tab never advances it. Measured: post from a background tab and the
+         doubt you just wrote sits at opacity 0, offset 18px, for as long as the tab stays
+         hidden — the one tile you most need to see. Animate only when somebody is looking, and
+         drop the class once it has played so a finished animation is not left declared over
+         the tile for the rest of the session. */
+      if (!document.hidden) {
+        el.classList.add('is-new');
+        setTimeout(function () { el.classList.remove('is-new'); }, 560);
+      }
       /* It now sits at the top of the board, so it is usually on screen already. Move the page
          the smallest amount that brings it fully into view, and never far enough to take the
          composer with it; scrolling away from what you just did was the old valley. */

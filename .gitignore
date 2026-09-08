@@ -13,6 +13,13 @@ design/
 # Local tooling cache and critique logs.
 .impeccable/
 
+# Design and product context for agents working on the repo. Read before changing UI, but
+# nothing the deployed site loads, and PRODUCT.md carries competition framing that does not
+# belong on a public page.
+PRODUCT.md
+DESIGN.md
+CLAUDE.md
+
 # OS and editor noise
 .DS_Store
 Thumbs.db

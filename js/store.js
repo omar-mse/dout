@@ -1,7 +1,7 @@
 /* dout — local store
    Everything lives in this browser's localStorage under one key.
    The board is split by subject: five subjects, each with its own doubts and its own
-   me too record. Seeded on first load so judges see live boards immediately.
+   me too record. Seeded on first load so a first visit lands on live boards, not empty ones.
 
    localStorage is user-writable, shared across tabs, and can vanish or refuse writes
    at any moment. Nothing read back from it is trusted: every record is normalised into

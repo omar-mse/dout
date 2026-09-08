@@ -37,7 +37,7 @@
       /* Locking has to take the subject out of the tab title too. Leaving "BIOL" up there
          after the dashboard is closed tells the next person at the machine which class this
          key opens, which is the one thing locking was supposed to put away. */
-      document.title = 'dout — For professors';
+      document.title = 'dout · For professors';
       if (moveFocus && gateSelect) gateSelect.focus();
     }
   }
@@ -92,7 +92,7 @@
 
   function render() {
     var meta = store.getMeta();
-    document.title = 'dout — ' + meta.title;
+    document.title = 'dout · ' + meta.title;
     document.getElementById('course').textContent = meta.code + ' · ' + meta.professor;
     document.getElementById('dash-title').textContent = meta.name;
 

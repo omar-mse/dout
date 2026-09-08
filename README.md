@@ -2,13 +2,13 @@
 
 Students ask their professor anonymously. Classmates tap **Me too**. The count breaks pluralistic ignorance: the private belief that you are the only one who did not get it.
 
-Built for GDC RIT Dubai DesignAthon 2026. Static site, no backend: doubts and Me too counts live in the browser's local storage, seeded with a demo lecture.
+Static site, no backend: doubts and Me too counts live in the browser's local storage, seeded with a demo lecture.
 
 ## Pages
 
 - `index.html` – landing
 - `feed.html` – the live doubt grid (ask, Me too, filters)
-- `problem.html` – the required **Problem & Solution** page
+- `problem.html` – the **Problem & Solution** write-up
 - `professor.html` – password-gated professor dashboard
 
 Demo password for the dashboard: `professor` (also shown under the password box). Change it in `js/professor.js` (`DEMO_PASSWORD`).

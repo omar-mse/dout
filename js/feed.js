@@ -519,7 +519,7 @@
     noticeEl = document.getElementById('storage-note');
 
     var meta = store.getMeta();
-    document.title = 'dout — ' + meta.title;
+    document.title = 'dout · ' + meta.title;
     document.getElementById('course').textContent = meta.code + ' · ' + meta.professor;
     document.getElementById('subject-title').textContent = meta.name;
     document.getElementById('lock-note').innerHTML = ui.icons.lock + '<span>No name attached</span>';

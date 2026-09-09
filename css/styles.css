@@ -494,10 +494,29 @@ img, svg { display: block; }
 /* Pinned to the bottom so two captions of different lengths still leave the panels level. */
 .roomfig__cap { margin-top: auto; font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); }
 .roomfig__cap strong { color: var(--ink); font-weight: 700; }
-.seat { fill: var(--tile); stroke: var(--line); stroke-width: 3; }
+/* fill-box for the same reason .seat-g takes it: an SVG element with no transform-box
+   scales about the viewBox origin, so a hovered seat would slide toward the corner of the
+   room instead of growing where it sits. */
+.seat { fill: var(--tile); stroke: var(--line); stroke-width: 3; transform-box: fill-box; transform-origin: center; }
 .seat--stuck { fill: var(--heat-4); }
 .seat--asked { fill: var(--yellow); }
 .seat__q { fill: var(--heat-4-ink); font-family: var(--font-mono); font-size: 19px; font-weight: 700; }
+
+/* The room answers the pointer, one seat at a time. Small on purpose: this is a diagram of a
+   lecture hall rather than a control, and it is aria-hidden decoration either way. Scale
+   rather than the up-left lift .btn and .subject use, because scale is the move these seats
+   already make when the reveal wave plays them in.
+
+   Guarded on hover: a tap leaves :hover stuck on a touch screen, and a square frozen at 1.06
+   with no way to clear it is worse than no hover at all. Reduced motion needs nothing here —
+   the blanket rule at the foot of this file drops the transition and the seat snaps instead. */
+@media (hover: hover) {
+  .seat, .seat-g { transition: transform 140ms var(--ease-pop); }
+  .seat:hover, .seat-g:hover { transform: scale(1.08); }
+  /* A stuck seat is a group: the square and its ? have to grow together, so the rect inside
+     must not take the hover a second time and land on 1.17. */
+  .seat-g:hover > .seat { transform: none; }
+}
 
 /* The professor's half of the landing band: the same room after dout, as the ranked list their
    dashboard actually shows. Deliberately not the tile board — the hero already owns that, and
@@ -509,6 +528,18 @@ img, svg { display: block; }
 .rankfig__q { display: block; font-size: 0.875rem; line-height: 1.4; font-weight: 500; }
 .rankfig__bar { display: block; height: 12px; margin-top: 8px; border: 2px solid var(--line); background: var(--tile); }
 .rankfig__bar i { display: block; height: 100%; background: var(--hue); }
+
+/* The bars answer the pointer by doing again what they did on the way in: filling from zero up
+   to the count they carry. The bar always ends where the data puts it, so the hover replays how
+   the value arrives rather than changing what it reports. That distinction is the whole rule —
+   a seat can scale because a square's size means nothing, a bar's length is the number.
+
+   The row is the target, not the bar. A 12px strip is too thin to hover on purpose, and one row
+   is one doubt, the same granularity one seat has. Same keyframe and same 560ms as the scroll
+   reveal, so a bar filling is one gesture on this site rather than two. */
+@media (hover: hover) {
+  .rankfig__row:hover .rankfig__bar i { animation: bar-in 560ms var(--ease-pop); }
+}
 
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
 .step { display: flex; flex-direction: column; gap: 14px; }
@@ -821,8 +852,14 @@ img, svg { display: block; }
    so fill against track measured 2.44:1 and the proportion — the only thing this graphic says —
    stopped being readable. heat-5 is the deep end in light and the lifted end in dark, so the
    bar reads in both. */
-.bar__fill { height: 100%; background: var(--heat-5); }
+.bar__fill { height: 100%; background: var(--heat-5); transform-origin: left center; }
 .bar__value { font-family: var(--font-mono); font-size: 0.9375rem; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Same gesture as the ranked bars: the fill replays from zero up to the percentage it reports,
+   against the tinted track that shows how far it did not go. */
+@media (hover: hover) {
+  .bar:hover .bar__fill { animation: bar-in 560ms var(--ease-pop); }
+}
 
 .ps-lede { margin-top: 18px; }
 .capabilities { margin: 24px 0 0; border-top: 2px solid var(--line); }
@@ -1022,6 +1059,7 @@ img, svg { display: block; }
   animation: bar-in 560ms var(--ease-pop) backwards;
   animation-delay: calc(140ms + var(--d, 0) * 90ms);
 }
+/* Shared: the scroll reveal here, plus the hover replay on .rankfig__row and .bar. */
 @keyframes bar-in { from { transform: scaleX(0); } }
 
 /* The board takes its heat in reading order rather than fading in. Fading was the reflex and

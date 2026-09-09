@@ -691,6 +691,10 @@ img, svg { display: block; }
 
 .gate { max-width: 520px; margin: clamp(40px, 8vw, 96px) auto 0; }
 .gate .box { display: flex; flex-direction: column; gap: 18px; }
+/* The kicker is a flex item here, so it stretches the full width of the form instead of
+   shrink-wrapping the way it does in the heroes. Centre the label in the band it actually
+   occupies, and drop the trailing letter-space so it sits optically centred, not 2px left. */
+.gate .kicker--boxed { text-align: center; padding-right: calc(10px - 0.15em); }
 .gate h1 { font-size: clamp(1.625rem, 3vw, 2.125rem); }
 .field { display: flex; flex-direction: column; gap: 8px; }
 .field label { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }

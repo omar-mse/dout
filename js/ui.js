@@ -258,7 +258,7 @@
   }
 
   function renderFooter() {
-    return '<div class="footer"><div>dout · Anonymous doubts, counted</div>' +
+    return '<div class="footer"><div>dout</div>' +
       '<nav aria-label="Footer"><ul>' +
       LINKS.map(function (l) { return '<li><a href="' + l.href + '">' + esc(l.label) + '</a></li>'; }).join('') +
       '</ul></nav></div>';

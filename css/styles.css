@@ -340,7 +340,16 @@ img, svg { display: block; }
 .preview__count { font-family: var(--font-mono); font-size: clamp(1.375rem, 2.6vw, 2.125rem); font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .preview__count--word { font-size: 0.8125rem; letter-spacing: 0.1em; text-transform: uppercase; }
 .preview__label { font-size: 0.75rem; line-height: 1.4; font-weight: 500; overflow: hidden; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.preview__cell--empty { border: 3px dashed var(--line); align-items: center; justify-content: center; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; }
+/* The dashed rule floats inside the cell rather than sitting on its box. The grid paints its
+   lines as 3px of ground showing through the gaps, and this cell is the last one, so its own
+   border was pressed flat against solid line on all four sides: gap above and to the left, the
+   grid's outer border to the right and below. The cell is also never a whole number of pixels
+   wide (170.44 on desktop, ~85 on a phone), so at small sizes those edges rasterise into the
+   black beside them and the gaps in the dash stop reading on whichever sides round badly.
+   Inset by 5px the rule has tile on both sides of it and reads as dashed at every width.
+   Still a 3px dashed border with no shadow, which is what the rule asks for. */
+.preview__cell--empty { position: relative; align-items: center; justify-content: center; text-align: center; font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; }
+.preview__cell--empty::before { content: ""; position: absolute; inset: 5px; border: 3px dashed var(--line); pointer-events: none; }
 .preview__caption { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; }
 
 /* ---------- Room figure ----------

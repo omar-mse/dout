@@ -120,7 +120,10 @@
    it to y=0, which puts a 44px Me too button entirely behind 75px of chrome — the ring is not
    dimmed, it is gone. Reserving the bar's height at the top of every scroll-into-view lands
    the focused element below it instead. WCAG 2.2 SC 2.4.11. */
-html { background: var(--ground); scroll-padding-top: 88px; }
+/* A page shorter than the viewport has no scrollbar, so moving to it from a page that has one
+   widens the viewport by the scrollbar's width and slides every centred container sideways.
+   Reserving the gutter on both keeps the layout still across navigations. */
+html { background: var(--ground); scroll-padding-top: 88px; scrollbar-gutter: stable; }
 
 body {
   margin: 0;
@@ -187,6 +190,13 @@ img, svg { display: block; }
   position: sticky; top: 0; z-index: 50;
   background: #0b0b0b; color: #ffffff;
   border-bottom: 3px solid var(--line);
+  /* The bar's contents are injected by js/ui.js at DOMContentLoaded, so the same 72px the
+     inner row reserves has to be reserved on the empty shell as well. Without it the header
+     paints 3px tall and then snaps to 75, shoving the whole page down by a nav's height on
+     every navigation. Reserve it here and the injected row lands in space that already exists.
+     75px, not 72: box-sizing is border-box here, so the shell has to cover the inner row's
+     72px plus its own 3px bottom border to land on the same height the filled bar settles at. */
+  min-height: 75px;
 }
 .nav__inner {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;

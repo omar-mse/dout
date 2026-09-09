@@ -506,7 +506,8 @@
     var busiest = subs.reduce(function (m, s) { return s.meToos > m ? s.meToos : m; }, 0);
     wrap.innerHTML = subs.map(function (s) { return subjectCard(s, busiest); }).join('');
     document.getElementById('picker-note').innerHTML = ui.icons.lock +
-      '<span>Nothing you post is tied to a name, in any subject. Professors see questions and counts, never people.</span>';
+      '<span>Nothing you post is tied to a name, in any subject. Professors see questions and counts, never people. ' +
+      'Every board in this demo lives in this browser only.</span>';
   }
 
   /* ---------- board ---------- */
@@ -527,6 +528,12 @@
     document.getElementById('subject-title').textContent = meta.name;
     document.getElementById('lock-note').innerHTML = ui.icons.lock + '<span>No name attached</span>';
     document.getElementById('note-line').innerHTML = ui.icons.lock + '<span>Nothing on this grid is tied to a name. ' + ui.esc(meta.professor) + ' sees questions and counts, never people.</span>';
+    /* The board is device-local on this build: every doubt and every me too lives in this
+       browser, and nothing reaches a classmate's phone or the professor's laptop yet. Saying so
+       on the board itself is the same rule the storage notice follows — the product does not get
+       to imply a room it has not built. */
+    document.getElementById('local-note').innerHTML = ui.icons.lock +
+      '<span>This demo keeps every board in this browser. Your doubts and me toos stay on this device and do not reach anyone else yet.</span>';
 
     document.querySelectorAll('.filters__btn').forEach(function (b) {
       b.addEventListener('click', function () { setFilter(b.dataset.filter); });

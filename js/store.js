@@ -510,7 +510,7 @@
     notice: function () {
       load();
       if (!storageOk() || saveFailed) {
-        return 'This browser is not saving, so your me toos last until you close the tab. Nothing is lost for anyone else.';
+        return 'This browser is not saving, so your me toos last until you close the tab.';
       }
       if (recovered) {
         return 'Some saved doubts could not be read and were skipped. The board below is everything that survived.';

@@ -6,9 +6,8 @@
   <title>dout · Live feed</title>
   <meta name="description" content="Pick your subject and ask your professor anonymously. Tap Me too on the doubts you share. The grid shows where the subject lost people.">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%230b0b0b'/%3E%3Crect x='6' y='6' width='20' height='20' fill='%23ffe14d'/%3E%3C/svg%3E">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+  <link rel="preload" href="fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/archivo-black-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/styles.css">
   <script src="js/theme.js"></script>
 </head>
@@ -16,6 +15,16 @@
   <header class="nav"></header>
 
   <main id="main" class="container" tabindex="-1">
+
+    <!-- Both sections below are built from localStorage, so with scripting off there is no
+         board to show. Say that plainly rather than leaving a black bar over an empty page. -->
+    <noscript>
+      <div class="noscript">
+        <h1>The boards need JavaScript.</h1>
+        <p>Every doubt and every Me too on dout is stored in your own browser, so this page has nothing to draw without scripting. Turn JavaScript on for this site to read a board or ask a question.</p>
+        <p><a class="btn" href="problem.html">Read the problem and the research instead</a></p>
+      </div>
+    </noscript>
 
     <!-- Subject picker: the first thing Feed shows. One card per subject, each carrying its
          own live reading, so choosing a board is also a glance at where the week is stuck. -->
@@ -74,6 +83,7 @@
       <section class="grid" id="grid" aria-label="Doubts in this subject"></section>
 
       <p class="note-line" id="note-line"></p>
+      <p class="note-line" id="local-note"></p>
       <p class="note-line note-line--warn" id="storage-note" hidden></p>
     </section>
   </main>

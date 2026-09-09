@@ -29,6 +29,11 @@
     var id = unlocked();
     gate.hidden = !!id;
     dash.hidden = !id;
+    /* The head script stamps this before first paint so the gate never flashes ahead of a
+       dashboard. Keep it in step from here, or locking would leave the gate hidden by CSS
+       that JS no longer agrees with. */
+    if (id) document.documentElement.setAttribute('data-prof', 'open');
+    else document.documentElement.removeAttribute('data-prof');
     if (id) {
       store.setSubject(id);
       render();

@@ -3,6 +3,11 @@
    Palettes provide --hue / --hue-deep; heat steps are derived. */
 
 :root {
+  /* Names the theme for the parts of the page the stylesheet cannot reach: scrollbars, form
+     control internals, the native select popup. Without it the dark board painted a white
+     scrollbar down its own right edge, because the browser had never been told. */
+  color-scheme: light;
+
   --ground: #f4f1ea;
   --tile: #ffffff;
   --ink: #0b0b0b;
@@ -51,6 +56,8 @@
 :root[data-palette="pink"]    { --hue: #cc1a73; --hue-deep: #8a104c; }
 
 :root[data-theme="dark"] {
+  color-scheme: dark;
+
   --ground: #141414;
   --tile: #1e1e1e;
   --ink: #f4f1ea;
@@ -108,7 +115,12 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { background: var(--ground); }
+/* The nav is a 75px sticky bar, so anything the browser scrolls into view on focus arrives
+   underneath it. Measured: focus a control sitting 10-30px above the fold and Chrome scrolls
+   it to y=0, which puts a 44px Me too button entirely behind 75px of chrome — the ring is not
+   dimmed, it is gone. Reserving the bar's height at the top of every scroll-into-view lands
+   the focused element below it instead. WCAG 2.2 SC 2.4.11. */
+html { background: var(--ground); scroll-padding-top: 88px; }
 
 body {
   margin: 0;
@@ -283,7 +295,10 @@ img, svg { display: block; }
   font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase;
 }
 .footer nav { display: contents; }
-.footer ul { display: flex; gap: 28px; list-style: none; margin: 0; padding: 0; }
+/* Wraps because the row is three mono links at a fixed 28px gap: at 200% text zoom on a phone
+   they run past the viewport and take the whole page into horizontal scrolling with them. The
+   gap already covers both axes, so wrapping costs nothing at ordinary sizes. */
+.footer ul { display: flex; flex-wrap: wrap; gap: 28px; list-style: none; margin: 0; padding: 0; }
 .footer a { display: inline-block; padding: 6px 0; text-decoration: none; }
 /* --hue on the ground measures 3.42-3.48:1 in dark mode across every palette, so hovering
    made a footer link less readable than leaving it alone. --heat-5 is the one ramp step

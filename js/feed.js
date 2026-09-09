@@ -416,7 +416,10 @@
       var r = el.getBoundingClientRect();
       var h = window.innerHeight || 0;
       if (r.top < 84 || r.top > h - 120) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        /* A smooth scroll is script-driven motion, so the stylesheet's reduced-motion rule
+           cannot switch it off — the same reason rollCount and refreshHeat ask stillness()
+           directly. Jump to the tile instead of gliding to it. */
+        el.scrollIntoView({ behavior: stillness() ? 'auto' : 'smooth', block: 'nearest' });
       }
     }
     ui.toast('Posted anonymously. It is at the top of the board.');
@@ -539,7 +542,7 @@
       if (btn) { onMeToo(btn); return; }
       if (e.target.closest('[data-empty-ask]')) {
         textarea.focus();
-        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        textarea.scrollIntoView({ behavior: stillness() ? 'auto' : 'smooth', block: 'center' });
         return;
       }
       if (e.target.closest('[data-empty-all]')) { setFilter('top'); return; }

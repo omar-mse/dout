@@ -21,18 +21,13 @@
     return PALETTES.some(function (p) { return p.id === id; }) ? id : 'blue';
   }
 
-  /* No stored choice means we have not been told anything, not that light was asked for.
-     Fall back to what the operating system already says; an explicit flip still wins and
-     still persists, because setDark writes the key. */
-  function prefersDark() {
-    try { return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches); }
-    catch (e) { return false; }
-  }
-
+  /* Light is the default, whatever the operating system prefers. The board is a paper-white
+     ground with ink borders and that is the design as drawn, so a first visit sees it before
+     anything else decides for it. An explicit flip of the dark switch still wins and still
+     persists, because setDark writes the key and only a written key can turn this dark. */
   var root = document.documentElement;
   root.dataset.palette = validPalette(read(KEY_PALETTE));
-  var stored = read(KEY_DARK);
-  root.dataset.theme = (stored === null ? prefersDark() : stored === '1') ? 'dark' : 'light';
+  root.dataset.theme = read(KEY_DARK) === '1' ? 'dark' : 'light';
 
   /* A theme or palette flip repaints every token at once, but only some of them are animated.
      The tiles and the landing preview cross-fade their fill over 350-400ms while the ground, the

@@ -237,11 +237,17 @@ html { background: var(--ground); scroll-padding-top: 88px; scrollbar-gutter: st
 
 body {
   margin: 0;
+  /* Containing block for the sticker layer, which spans the document rather than the viewport.
+     Nothing else depends on it: every other absolutely positioned element on the site already
+     sits inside a positioned ancestor of its own. */
+  position: relative;
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.5;
   color: var(--ink);
-  background: var(--ground);
+  /* No background here on purpose: html already paints --ground (see above), and a second opaque
+     layer on body would bury the sticker layer, which sits at z-index -1. A block's own background
+     paints after negative-z-index descendants, so body painting the ground hid them completely. */
   -webkit-font-smoothing: antialiased;
   text-wrap: pretty;
 }
@@ -374,10 +380,16 @@ img, svg { display: block; }
 
 /* Theme popover */
 .theme { position: relative; }
+/* Drops from under the button that opened it, rather than appearing already landed. */
+/* Transform only, deliberately. This one is opened by ui.js and has no visibility guard, so a
+   stalled animation must still leave a readable panel: 8px out of place, never invisible. */
+@keyframes panel-in { from { transform: translateY(-8px); } }
+
 .theme__panel {
   position: absolute; right: 0; top: calc(100% + 14px); z-index: 60;
   width: 300px; padding: 20px; background: var(--tile); color: var(--ink);
   border: var(--border); box-shadow: var(--shadow);
+  animation: panel-in 200ms var(--ease-pop);
 }
 .theme__panel[hidden] { display: none; }
 .theme__title { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 12px; }
@@ -1194,7 +1206,402 @@ img, svg { display: block; }
   .tile--l { min-height: 376px; }
 }
 
+/* ---------- First-visit tour ----------
+   An overlay on a page that is already fully drawn behind it. Nothing here gates content: skip it,
+   block storage or kill the script and the landing page is unchanged.
+
+   Motion note for this whole section: every keyframe below is written `from`-only, so the element's
+   resting state IS its finished state. Nothing is held at opacity 0 waiting for a class, which is
+   what makes an animation ship a blank panel on a hidden tab or in a headless render. */
+
+/* The card is pressed onto the page rather than faded onto it: it travels a few pixels and its
+   shadow extends from nothing to the full 10px offset, which is this system's whole depth model
+   played forward. Blur stays 0 throughout — printed, not lit. */
+@keyframes tour-scrim { from { opacity: 0; } }
+@keyframes tour-card {
+  from { opacity: 0; transform: translateY(14px) scale(0.985); box-shadow: 0 0 0 var(--line); }
+}
+/* Direction carries meaning here and nowhere else on the site: --dir is +1 going forward and -1
+   going back, so a step arrives from the side you are travelling from. In a seven-step sequence
+   that is the difference between "another card" and "the next card". */
+@keyframes tour-step { from { opacity: 0; transform: translateX(calc(var(--dir, 1) * 18px)); } }
+.tour {
+  position: fixed; inset: 0; z-index: 90;
+  display: grid; place-items: center; padding: 20px;
+  /* A scrim, not a light source: flat ink at partial alpha, no blur behind it. */
+  background: color-mix(in oklch, var(--ink) 68%, transparent);
+  overflow-y: auto;
+}
+/* Opt-in, never automatic. A keyframe that starts at opacity 0 holds the element at opacity 0 for
+   as long as the animation fails to advance — and animations do not advance in a backgrounded tab
+   or a headless render. So the resting CSS here IS the finished state, and js adds .is-entering
+   only when the page is actually visible. PRODUCT.md: reveal animations never gate content. */
+.tour.is-entering { animation: tour-scrim 240ms ease-out; }
+.tour.is-entering .tour__card { animation: tour-card 420ms var(--ease-pop); }
+.tour__step.is-entering { animation: tour-step 260ms var(--ease-pop); }
+:root[data-tour="open"] { overflow: hidden; }
+
+/* One size for every step. The steps are not the same length — the tallest ran 462px against the
+   shortest at 372 — so the card used to resize under the cursor and Next walked 45px down the
+   screen between clicks. Fixed height, footer pinned to the bottom of it, so the button you are
+   about to press again is exactly where you left it. */
+.tour__card {
+  display: flex; flex-direction: column;
+  width: min(560px, 100%); min-height: 470px;
+  background: var(--tile); color: var(--ink);
+  border: var(--border); box-shadow: var(--shadow-lg);
+  padding: clamp(20px, 3vw, 30px);
+}
+/* The card holds still between steps; only its contents change. Animating the card itself would
+   re-run the entrance on every click, and re-landing a 560px panel seven times is a tic. */
+.tour__step { display: flex; flex-direction: column; flex: 1 1 auto; }
+.tour__top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tour__skip {
+  /* 44px in both directions, not just height: this is the control most people will reach for. */
+  padding: 6px 12px; min-height: 44px; min-width: 44px;
+  background: none; border: 0; color: var(--ink-soft); cursor: pointer;
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+  text-decoration: underline; text-underline-offset: 4px;
+}
+.tour__skip:hover { color: var(--ink); }
+.tour__title {
+  font-family: var(--font-display); font-size: clamp(1.4rem, 3.2vw, 2rem); line-height: 1.05;
+  margin: 10px 0 18px;
+}
+.tour__title:focus-visible { outline: 3px solid var(--ink); outline-offset: 4px; }
+.tour__body { margin: 18px 0 0; max-width: 62ch; }
+
+.tour__foot { display: flex; align-items: center; gap: 10px; margin-top: auto; padding-top: 24px; }
+/* Both buttons hold one width whatever the label says, or Next shifts sideways when it becomes
+   Start on the last step and the cursor has to chase it again. */
+.tour__foot .btn { min-width: 96px; text-align: center; justify-content: center; }
+.tour__dots { display: flex; gap: 5px; align-items: center; }
+.tour__dot {
+  width: 9px; height: 9px; background: var(--ground); border: 2px solid var(--line);
+  transition: transform 220ms var(--ease-pop), background-color 220ms var(--ease-pop);
+}
+/* Scale as well as fill. A control that changes only colour reads as dead in a system with no
+   light source, and the dots are the one place the step count is shown twice. */
+.tour__dot.is-on { background: var(--hue); transform: scale(1.45); }
+/* The step is a numeral as well as a row of dots: position is never carried by colour alone. */
+.tour__count {
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft);
+  font-variant-numeric: tabular-nums; margin-right: auto; white-space: nowrap;
+}
+
+/* Show the mechanism, don't describe it: each step draws the thing it is talking about. */
+.tourfig { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tourfig--tiles .tourfig__tile {
+  display: grid; place-items: center; width: 64px; height: 64px;
+  font-family: var(--font-display); font-size: 1.25rem;
+  border: var(--border); box-shadow: var(--shadow-sm);
+}
+.tourfig__tile--h5 { background: var(--heat-5); color: var(--heat-5-ink); }
+.tourfig__tile--h4 { background: var(--heat-4); color: var(--heat-4-ink); }
+.tourfig__tile--h2 { background: var(--heat-2); color: var(--heat-2-ink); }
+
+.tourfig--composer { align-items: stretch; }
+.tourfig__field {
+  flex: 1 1 auto; padding: 14px; background: var(--paper-fixed); color: var(--ink-fixed);
+  border: var(--border); border-color: var(--ink-fixed);
+  font-family: var(--font-mono); font-size: 12px; text-transform: uppercase;
+}
+.tourfig__ask {
+  display: grid; place-items: center; padding: 0 20px;
+  background: var(--yellow); color: var(--on-yellow);
+  border: var(--border); border-color: var(--ink-fixed);
+  font-family: var(--font-display); font-size: 0.9rem; text-transform: uppercase;
+}
+.tourfig__pill {
+  display: inline-grid; place-items: center; padding: 10px 16px;
+  background: var(--tile); border: var(--border); box-shadow: var(--shadow-sm);
+  font-family: var(--font-display); font-size: 0.85rem; text-transform: uppercase;
+}
+.tourfig__climb {
+  font-family: var(--font-display); font-size: 1.5rem; font-variant-numeric: tabular-nums;
+}
+.tourfig__chip {
+  padding: 8px 12px; background: var(--ink-fixed); color: var(--yellow);
+  font-family: var(--font-mono); font-size: 12px;
+}
+.tourfig--rank { flex-direction: column; align-items: stretch; gap: 8px; }
+.tourfig__row { display: flex; align-items: center; gap: 10px; }
+.tourfig__row b {
+  font-family: var(--font-display); font-size: 1rem; min-width: 2.2ch;
+  font-variant-numeric: tabular-nums;
+}
+.tourfig__row i { height: 16px; background: var(--hue); border: 2px solid var(--line); }
+.tourfig__sw { width: 34px; height: 34px; background: var(--sw); border: var(--border); }
+
+/* Three off the sheet, laid at angles — the same object the sticker tray is, in miniature. */
+.tourfig--stickers { gap: 14px; }
+.tourfig__peel {
+  display: block; position: relative; width: 76px; height: 76px;
+  background: var(--paper-fixed); border: var(--border); border-color: var(--ink-fixed);
+  box-shadow: var(--shadow-sm); transform: rotate(var(--t, 0deg));
+}
+.tourfig__peel img {
+  position: absolute; inset: 0; box-sizing: border-box; padding: 6px;
+  width: 100%; height: 100%; object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .tour { padding: 12px; place-items: start center; }
+  /* Still one fixed size, but never taller than the screen it has to fit on. */
+  .tour__card { padding: 18px; min-height: min(470px, calc(100vh - 24px)); }
+  .tourfig--composer { flex-direction: column; }
+  .tourfig__ask { padding: 10px; }
+}
+
+/* ---------- Stickers ----------
+   A decoration layer behind the page (landing and feed only). Two states: shut, where it sits at
+   z-index -1 and is wholly inert, so it cannot cover or intercept anything; and open, where it
+   lifts above the content so the stickers can be picked up and moved.
+
+   Everything here is chrome around raster art that carries its own look, so the tray and its
+   button follow the house rules — zero radius, 3px border, hard offset shadow — while the
+   stickers themselves are left alone. */
+.stickers {
+  position: absolute; inset: 0; z-index: -1;
+  overflow: hidden; pointer-events: none;
+}
+
+/* Lifted over the content while arranging, and only then. The veil is what tells you the page has
+   changed mode, since the stickers themselves do not move. */
+:root[data-stickers="edit"] .stickers { z-index: 70; }
+/* The sheet sits at 75, so a sticker carried onto it to be deleted would pass behind the sheet at
+   exactly the moment you are deciding whether to let go. While one is over the bin the layer rises
+   above the sheet instead, so you can see what you are about to lose. */
+:root[data-stickers="edit"] .stickers.is-lifted { z-index: 76; }
+/* The nav normally sits at 50, under the lifted layer. While arranging, a sticker dropped near the
+   top of the page would otherwise cover the very controls that close the tray, so the nav goes
+   above both the layer and the tray for as long as edit mode lasts. */
+:root[data-stickers="edit"] .nav { z-index: 78; }
+/* The veil belongs to the page, not to the layer. Hung off the layer it rode along when the layer
+   lifted over the sheet, dimming the sheet itself; on body it keeps its own level under both.
+
+   It exists (at zero opacity) from the moment the sticker layer boots rather than being summoned
+   by the edit attribute, because a pseudo-element that is created and destroyed cannot transition
+   — and a veil that blinks off while the sheet is still sliding away is worse than no motion. The
+   selector is scoped to [data-stickers] so pages without the layer never get the element at all. */
+:root[data-stickers] body::before {
+  content: ""; position: fixed; inset: 0; z-index: 69;
+  background: color-mix(in oklch, var(--ground) 62%, transparent);
+  opacity: 0; pointer-events: none;
+  transition: opacity 240ms var(--ease-pop);
+}
+:root[data-stickers="edit"] body::before { opacity: 1; }
+
+/* A sticker being pressed down: it arrives slightly oversized and settles onto the page. */
+@keyframes sticker-drop {
+  from { transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(calc(var(--s, 1) * 1.16)); }
+}
+
+.sticker {
+  position: absolute; width: 88px; height: auto; padding: 0;
+  background: none; border: 0; line-height: 0;
+  transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(var(--s, 1));
+  /* Position is left/top, not transform, so transitioning transform costs a drag nothing: the
+     only things that move it are a turn and the shrink toward the bin, both of which should
+     travel rather than teleport. */
+  transition: transform 240ms var(--ease-pop), opacity 180ms linear;
+  pointer-events: none; touch-action: none; cursor: grab;
+}
+.sticker.is-dropped { animation: sticker-drop 260ms var(--ease-pop); }
+.sticker img { display: block; width: 100%; height: auto; user-select: none; -webkit-user-drag: none; }
+:root[data-stickers="edit"] .sticker { pointer-events: auto; }
+:root[data-stickers="edit"] .sticker:hover { filter: drop-shadow(3px 3px 0 var(--line)); }
+.sticker.is-held { cursor: grabbing; filter: drop-shadow(5px 5px 0 var(--line)); }
+/* Carried back into the tray: the sticker fades and shrinks toward the bin it is about to enter,
+   so letting go is never a surprise. Colour alone does not carry it — the size changes too. */
+.sticker.is-binning {
+  opacity: 0.45;
+  transform: translate(-50%, -50%) rotate(var(--r, 0deg)) scale(calc(var(--s, 1) * 0.7));
+  filter: none;
+}
+.sticker:focus-visible { outline: 3px solid var(--hue-deep); outline-offset: 4px; }
+
+/* The sheet. A sticker sheet is the object these came off, so the tray is one: paper ground, a
+   punched edge down the side it tore from, and the stickers laid on it slightly askew.
+
+   --sheet carries the paper colour through every background layer, so arming the bin is one
+   declaration rather than an override per layer. */
+/* `display: flex` below outranks the UA rule behind the hidden attribute, and the sheet stayed on
+   screen after Done. The attribute is what JS toggles, so it has to win. */
+.tray[hidden] { display: none; }
+/* Opt-in for the same reason as the tour: a shut-then-reopened sheet must never be stuck at
+   opacity 0 because the tab was in the background when it opened. */
+.tray.is-entering { animation: sheet-in 300ms var(--ease-pop); }
+
+/* The sheet slides in off the edge it was docked to before it became a window, and its shadow
+   extends as it lands. Exit is driven from JS at 75% of this, because it has to finish before the
+   element is hidden. */
+@keyframes sheet-in {
+  from { opacity: 0; transform: translate(20px, -8px); box-shadow: 0 0 0 var(--line); }
+}
+@keyframes sheet-in-docked {
+  from { opacity: 0; transform: translateY(24px); }
+}
+
+.tray {
+  --sheet: var(--paper-fixed);
+  --punch: 18px;
+  /* A floating window, not a dock. Docked to an edge it owned that whole side of the page, which
+     is precisely where you could then never put a sticker. JS sets --sheet-x/--sheet-y and keeps
+     them inside the viewport; the fallbacks place it top-right on a first visit. */
+  position: fixed; z-index: 75;
+  left: var(--sheet-x, calc(100vw - 344px)); top: var(--sheet-y, calc(var(--nav-h, 76px) + 16px));
+  width: min(320px, 86vw); height: min(76vh, 640px);
+  display: flex; flex-direction: column;
+  color: var(--ink-fixed);
+  border: var(--border); border-color: var(--ink-fixed);
+  box-shadow: var(--shadow);
+  /* Holes first, paper second. The holes are transparent rather than ground-coloured so the
+     veiled page shows through them — a punched edge, not a printed imitation of one. */
+  background:
+    radial-gradient(circle at calc(var(--punch) / 2) 12px, transparent 5px, var(--sheet) 5.5px)
+      0 0 / var(--punch) 26px repeat-y,
+    linear-gradient(var(--sheet), var(--sheet))
+      var(--punch) 0 / calc(100% - var(--punch)) 100% no-repeat;
+}
+
+/* Armed as a bin, with a sticker hovering over it. The note says so in words as well — colour is
+   never the only channel — and the whole sheet turns, so it is unmissable at the edge of vision. */
+.tray.is-bin { --sheet: var(--danger); color: var(--on-danger); }
+.tray.is-bin .tray__note::after { content: " Let go to remove it."; font-weight: 700; }
+.tray.is-bin .tray__head { background: var(--danger); color: var(--on-danger); border-bottom-color: var(--on-danger); }
+.tray.is-bin .tray__count, .tray.is-bin .tray__note { color: var(--on-danger); }
+.tray.is-bin .tray__foot .btn { color: var(--on-danger); border-color: var(--on-danger); }
+
+/* The one yellow object in edit mode; the page behind is veiled, so nothing competes with it. */
+/* Stacked, not side by side: at 320px the title and the count each wrapped to two lines when they
+   shared a row, and the header came out four lines tall. */
+.tray__head {
+  position: relative; flex: 0 0 auto;
+  margin-left: var(--punch); padding: 12px 40px 12px 14px;
+  background: var(--yellow); color: var(--on-yellow);
+  border-bottom: var(--border); border-color: var(--ink-fixed);
+  /* The header is the window's handle. */
+  cursor: grab; touch-action: none; user-select: none;
+}
+.tray.is-moving .tray__head { cursor: grabbing; }
+
+/* Punched dots, the same vocabulary as the sheet's torn edge. Also the keyboard handle: focus it
+   and the arrow keys walk the window around, so reaching the right-hand side of the page never
+   depends on being able to drag. */
+.tray__grip {
+  position: absolute; top: 50%; right: 10px; transform: translateY(-50%);
+  width: 18px; height: 26px; padding: 0; border: 0; background: transparent;
+  cursor: grab; touch-action: none;
+}
+.tray__grip::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: radial-gradient(var(--on-yellow) 38%, transparent 40%);
+  background-size: 9px 9px;
+}
+.tray__grip:focus-visible { outline: 3px solid var(--ink-fixed); outline-offset: 2px; }
+.tray__title { display: block; font-family: var(--font-display); font-size: 1.05rem; line-height: 1.05; text-transform: uppercase; }
+.tray__count {
+  display: block; margin-top: 4px;
+  font-family: var(--font-mono); font-size: 12px; font-variant-numeric: tabular-nums;
+}
+
+.tray__items {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-content: start;
+  flex: 1 1 auto; overflow-y: auto; overscroll-behavior-y: contain;
+  list-style: none; margin: 0; padding: 14px 14px 14px calc(var(--punch) + 14px);
+}
+
+/* Laid on the sheet by hand, not printed in a grid: each swatch sits a couple of degrees off, and
+   straightens as you reach for it. Hover lifts on a longer shadow, press sinks onto a collapsed
+   one — the house press model, not a colour change. */
+.tray__item {
+  display: block; position: relative;
+  width: 100%; aspect-ratio: 1; padding: 0;
+  background: var(--paper-fixed); border: var(--border); border-color: var(--ink-fixed);
+  box-shadow: var(--shadow-sm);
+  transform: rotate(var(--t, 0deg));
+  transition: transform 120ms var(--ease-pop), box-shadow 120ms var(--ease-pop);
+  cursor: grab; touch-action: none;
+}
+.tray__item:nth-child(4n + 1) { --t: -2.5deg; }
+.tray__item:nth-child(4n + 2) { --t: 1.5deg; }
+.tray__item:nth-child(4n + 3) { --t: 2.5deg; }
+.tray__item:nth-child(4n)     { --t: -1.5deg; }
+.tray__item:hover { transform: rotate(0deg) translate(-2px, -2px); box-shadow: var(--shadow); }
+.tray__item:active { transform: rotate(0deg) translate(3px, 3px); box-shadow: 1px 1px 0 var(--line); }
+/* Absolute rather than centred-in-grid: a grid row sizes itself to its content, so the image's
+   own height: 100% has nothing definite to resolve against and falls back to the sticker's
+   intrinsic height — which is how the boot and the vertical wordmark grew straight out of the
+   swatch and dragged a scrollbar into the row. Against a fixed 72px box, inset does resolve. */
+.tray__item img {
+  position: absolute; inset: 0; box-sizing: border-box; padding: 6px;
+  width: 100%; height: 100%; object-fit: contain;
+  user-select: none; -webkit-user-drag: none;
+}
+.tray__item:focus-visible { outline: 3px solid var(--hue-deep); outline-offset: 3px; }
+
+/* Outside the scroll area: Clear all and the instructions stay put however far down the sheet you
+   have scrolled, because both are about the sheet rather than about any sticker on it. */
+.tray__foot {
+  flex: 0 0 auto; margin-left: var(--punch); padding: 12px 14px 14px;
+  border-top: var(--border); border-color: var(--ink-fixed);
+}
+.tray__foot .btn { background: transparent; color: var(--ink-fixed); border-color: var(--ink-fixed); }
+.tray__foot .btn:hover { background: var(--ink-fixed); color: var(--paper-fixed); }
+.tray__note {
+  font-size: 12px; line-height: 1.45; margin: 10px 0 0; max-width: 62ch;
+  color: color-mix(in oklch, var(--ink-fixed) 68%, var(--paper-fixed));
+}
+
+.sticker-nudge {
+  position: fixed; top: 68px; right: var(--gutter); z-index: 76;
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 8px 8px 12px;
+  background: var(--yellow); color: var(--on-yellow);
+  border: var(--border); box-shadow: var(--shadow-sm);
+  font-size: 13px; font-weight: 700;
+}
+.sticker-nudge__x {
+  display: grid; place-items: center; width: 24px; height: 24px;
+  background: none; border: 0; color: inherit; cursor: pointer;
+}
+.stickers-btn--loose {
+  position: fixed; right: 20px; bottom: 20px; z-index: 74;
+  background: var(--tile); border: var(--border); box-shadow: var(--shadow-sm);
+}
+
+/* A 320px drawer on a 390px screen would be the whole phone, and you would not be able to see the
+   page you are decorating. Below 640 the sheet lies down along the bottom instead, and the punched
+   edge turns with it — it always runs along the edge the sheet tore from. */
+@media (max-width: 640px) {
+  /* No floating window on a phone: there is nowhere to float it to. The sheet stays docked to the
+     bottom, the stored position is ignored, and the grip hides rather than lying about it. */
+  .tray {
+    left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 62vh;
+    border: 0; border-top: var(--border); border-color: var(--ink-fixed);
+    box-shadow: 0 -6px 0 var(--line);
+    /* Docked at the bottom, so it rises from the bottom rather than sliding in from a side. */
+    background:
+      radial-gradient(circle at 13px calc(var(--punch) / 2), transparent 5px, var(--sheet) 5.5px)
+        0 0 / 26px var(--punch) repeat-x,
+      linear-gradient(var(--sheet), var(--sheet))
+        0 var(--punch) / 100% calc(100% - var(--punch)) no-repeat;
+  }
+  .tray.is-entering { animation: sheet-in-docked 280ms var(--ease-pop); }
+  .tray__head, .tray__foot { margin-left: 0; }
+  .tray__head { margin-top: var(--punch); padding-right: 14px; cursor: default; }
+  .tray__grip { display: none; }
+  .tray__items { grid-template-columns: repeat(4, 1fr); padding: 14px; }
+  /* On a 62vh sheet the footer was taking a third of the height for one paragraph. Tighter type
+     and padding hand those rows back to the stickers. */
+  .tray__foot { padding: 10px 14px 12px; }
+  .tray__note { font-size: 11px; line-height: 1.4; margin-top: 8px; }
+  .sticker { width: 72px; }
+}
+
 @media (forced-colors: active) {
+  .sticker, .tray__item { forced-color-adjust: none; }
   .tile--h1, .tile--h2, .tile--h3, .tile--h4, .tile--h5, .tile--answered,
   .legend__step, .preview__cell, .row__heat i, .stat--hue, .bar__fill,
   .num-badge, .waiting__dot, .swatch,

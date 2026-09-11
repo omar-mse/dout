@@ -1,5 +1,9 @@
 # Everything the deployed site does not need.
-# What ships: index.html, feed.html, problem.html, professor.html, css/, js/, README.md.
+# What ships: index.html, feed.html, problem.html, professor.html, css/, js/, img/, README.md.
+
+# The sticker sheet the stickers in img/stickers/ were cut from. Source material, like design/:
+# the site loads the cut PNGs, never the sheet.
+download.jpg
 
 # Design canvas — the three explored directions (Notice Board, Lecture Notes, Block)
 # and the published bundle, which inlines the whole canvas editor into one 2.4 MB file.

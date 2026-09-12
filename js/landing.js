@@ -1,4 +1,4 @@
-/* dout — landing: live 3×3 heat preview fed from the store. */
+/* dout — landing: the live heat boards (the hero's 3×3 and the story's) fed from the store. */
 (function () {
   var store = window.MeTooStore;
   var ui = window.MeTooUI;
@@ -15,8 +15,8 @@
   var revealed = false;
 
   function render() {
-    var grid = document.getElementById('preview');
-    if (!grid) return;
+    var grids = document.querySelectorAll('[data-live-board]');
+    if (!grids.length) return;
     var subject = busiest();
     if (subject) store.setSubject(subject.id);
     var doubts = store.getDoubts().sort(function (a, b) { return b.count - a.count; });
@@ -34,10 +34,16 @@
     while (n < 8) { html += '<div class="preview__cell" style="--i:' + n + '"></div>'; n += 1; }
     var href = subject ? 'feed.html?subject=' + encodeURIComponent(subject.id) + '#ask' : 'feed.html#ask';
     html += '<a class="preview__cell preview__cell--empty" href="' + href + '" style="--i:8;text-decoration:none;color:inherit">Your<br>doubt</a>';
-    grid.innerHTML = html;
-    /* Only the first paint earns the entrance. A repaint driven by another tab's me too must
+    grids.forEach(function (grid) { grid.innerHTML = html; });
+    /* Only the first paint earns the entrance, and only the hero's board gets one: the story's
+       takes its heat from the scroll (js/story.js). When js/hero.js is live it fires the reveal
+       itself at the right beat of the load-in. A repaint driven by another tab's me too must
        not blank the board and replay it, the same rule the feed grid follows. */
-    if (!revealed) { revealed = true; ui.reveal(grid); }
+    if (!revealed) {
+      revealed = true;
+      var hero = document.getElementById('preview');
+      if (hero && !window.DoutHero) ui.reveal(hero);
+    }
   }
 
   document.addEventListener('DOMContentLoaded', render);

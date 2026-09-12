@@ -264,7 +264,8 @@
       '</ul></nav></div>';
   }
 
-  window.MeTooUI = { icons: ICONS, esc: esc, toast: toast, reveal: reveal };
+  /* wantsMotion is shared so the hero and the story gate on exactly the same conditions. */
+  window.MeTooUI = { icons: ICONS, esc: esc, toast: toast, reveal: reveal, wantsMotion: wantsMotion };
 
   document.addEventListener('DOMContentLoaded', function () {
     var foot = document.querySelector('[data-footer]');

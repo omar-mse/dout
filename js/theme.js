@@ -21,13 +21,25 @@
     return PALETTES.some(function (p) { return p.id === id; }) ? id : 'blue';
   }
 
-  /* Light is the default, whatever the operating system prefers. The board is a paper-white
-     ground with ink borders and that is the design as drawn, so a first visit sees it before
-     anything else decides for it. An explicit flip of the dark switch still wins and still
-     persists, because setDark writes the key and only a written key can turn this dark. */
+  /* The device decides the first visit. A visitor whose system is set to dark has already said
+     which way they read, and the board arrives that way rather than flashing paper-white at
+     them; a visitor on a light system still sees the design as drawn. An explicit flip of the
+     dark switch outranks the system for good, because setDark writes the key and a written key
+     is the only thing consulted from then on. */
+  var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function systemPrefersDark() {
+    return !!(darkQuery && darkQuery.matches);
+  }
+  function preferredDark() {
+    var stored = read(KEY_DARK);
+    if (stored === '1') return true;
+    if (stored === '0') return false;
+    return systemPrefersDark();
+  }
+
   var root = document.documentElement;
   root.dataset.palette = validPalette(read(KEY_PALETTE));
-  root.dataset.theme = read(KEY_DARK) === '1' ? 'dark' : 'light';
+  root.dataset.theme = preferredDark() ? 'dark' : 'light';
 
   /* A theme or palette flip repaints every token at once, but only some of them are animated.
      The tiles and the landing preview cross-fade their fill over 350-400ms while the ground, the
@@ -51,6 +63,11 @@
     root.removeAttribute('data-theming');
   }
 
+  function applyDark(on) {
+    instantly(function () { root.dataset.theme = on ? 'dark' : 'light'; });
+    document.dispatchEvent(new CustomEvent('metoo:theme', { detail: window.MeTooTheme.get() }));
+  }
+
   window.MeTooTheme = {
     PALETTES: PALETTES,
     get: function () {
@@ -63,9 +80,21 @@
       document.dispatchEvent(new CustomEvent('metoo:theme', { detail: this.get() }));
     },
     setDark: function (on) {
-      instantly(function () { root.dataset.theme = on ? 'dark' : 'light'; });
+      applyDark(on);
       write(KEY_DARK, on ? '1' : '0');
-      document.dispatchEvent(new CustomEvent('metoo:theme', { detail: this.get() }));
     }
   };
+
+  /* Someone who has never touched the switch is still following their system, so follow it when
+     it changes — a laptop crossing sunset should not leave the board in the wrong scheme until
+     the next reload. Once the key is written this listener stops mattering: preferredDark reads
+     the stored answer and returns it whatever the system now says. The popover's switch hears
+     the same metoo:theme event it hears from a click, so it stays honest either way. */
+  if (darkQuery) {
+    var onSystemChange = function () {
+      if (read(KEY_DARK) === null) applyDark(systemPrefersDark());
+    };
+    if (darkQuery.addEventListener) darkQuery.addEventListener('change', onSystemChange);
+    else if (darkQuery.addListener) darkQuery.addListener(onSystemChange);
+  }
 })();

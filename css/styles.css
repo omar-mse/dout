@@ -465,6 +465,25 @@ img, svg { display: block; }
 .hero__lede { font-size: clamp(1.0625rem, 1.4vw, 1.25rem); font-weight: 500; max-width: 600px; }
 .hero__cta { display: flex; flex-wrap: wrap; gap: 20px; }
 
+/* The props: the board's own pieces, scattered beside the copy. They sit in flow on the kicker
+   row and the flag row, where the type leaves the space, so they never land on a headline at any
+   width; the rotation and the nudge are what make three squares in a row read as thrown down
+   rather than lined up. Fully painted at rest — js/hero.js flies them in on load when motion is
+   wanted and hands the transform back to this rule when it is done. */
+.hero__row { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
+.hero__props { display: inline-flex; align-items: center; gap: 14px; }
+.prop {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  width: 56px; height: 56px; background: var(--tile); color: var(--ink);
+  border: var(--border); box-shadow: var(--shadow-sm);
+  font-family: var(--font-mono); font-weight: 700; line-height: 1;
+  transform: translateY(var(--dy, 0px)) rotate(var(--r, 0deg));
+}
+.prop--stuck { background: var(--heat-4); color: var(--heat-4-ink); font-size: 1.5rem; }
+.prop--metoo { width: 78px; height: 78px; background: var(--yellow); color: var(--on-yellow); box-shadow: var(--shadow); }
+.prop--metoo b { font-size: 1.75rem; font-variant-numeric: tabular-nums; }
+.prop--metoo small { font-size: 0.5625rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; }
+
 .preview { display: flex; flex-direction: column; gap: 14px; }
 .preview__grid {
   display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px;
@@ -501,8 +520,6 @@ img, svg { display: block; }
 .roomfig__panel { display: flex; flex-direction: column; gap: 14px; padding: 20px; background: var(--tile); border: var(--border); box-shadow: var(--shadow); }
 .roomfig__h { font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
 .roomfig__svg { display: block; width: 100%; max-width: 340px; height: auto; }
-/* The problem page sits in a reading column; the landing band runs with its full-width siblings. */
-.roomfig--wide { max-width: none; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); }
 /* Pinned to the bottom so two captions of different lengths still leave the panels level. */
 .roomfig__cap { margin-top: auto; font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); }
 .roomfig__cap strong { color: var(--ink); font-weight: 700; }
@@ -530,9 +547,9 @@ img, svg { display: block; }
   .seat-g:hover > .seat { transform: none; }
 }
 
-/* The professor's half of the landing band: the same room after dout, as the ranked list their
-   dashboard actually shows. Deliberately not the tile board — the hero already owns that, and
-   the dashboard is the one screen the landing page otherwise never shows. */
+/* The ranked list the professor's dashboard actually shows, the last beat of the landing story.
+   Deliberately not another tile board: the dashboard is the one screen the landing page
+   otherwise never shows. */
 .rankfig { display: flex; flex-direction: column; gap: 16px; }
 .rankfig__row { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 14px; align-items: baseline; }
 .rankfig__n { font-family: var(--font-mono); font-size: 1.75rem; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
@@ -540,6 +557,73 @@ img, svg { display: block; }
 .rankfig__q { display: block; font-size: 0.875rem; line-height: 1.4; font-weight: 500; }
 .rankfig__bar { display: block; height: 12px; margin-top: 8px; border: 2px solid var(--line); background: var(--tile); }
 .rankfig__bar i { display: block; height: 100%; background: var(--hue); }
+
+/* ---------- Story (landing) ----------
+   The professor's half of the argument as one figure in three states: the room as it looks,
+   the room as it is, the room counted. Two layouts share this markup.
+
+   The resting layout is the finished one — a plain section, room already stuck, board already
+   hot, bars already grown, four captions in a column. That is what no-JS, reduced motion, a
+   hidden tab, a prerender and a screenshot all get, and nothing below hides a thing.
+
+   .story--live is added by js/story.js in the same breath as it builds the scroll timeline,
+   and removed again if that timeline is ever torn down. It turns the section into a tall
+   runway with a sticky stage, stacks the beats and the figures on top of each other, and
+   starts the room and the board from their quiet state so the scroll can take them to the
+   hot one. The heat itself is not tweened cell by cell: the timeline drives one number on the
+   container (--stuck-p on the room, --heat-p on the board) and each square derives its own
+   colour from that number and its place in the reading order. landing.js repaints the board's
+   tiles whenever another tab adds a Me too, and a number on the container survives that where
+   inline colours on the cells would not. */
+.story { padding-top: clamp(56px, 8vw, 110px); }
+.story__stage { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 4vw, 56px); align-items: start; }
+.story__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; }
+.story__copy h2 { font-size: clamp(1.625rem, 3vw, 2.25rem); }
+.story__beats { display: grid; gap: 14px; }
+.story__beat { font-size: 1.0625rem; line-height: 1.5; color: var(--ink-soft); max-width: 44ch; }
+.story__beat strong { color: var(--ink); }
+.story__fig { position: relative; display: grid; gap: 28px; justify-items: start; }
+/* The seats are HTML squares rather than the SVG the problem page draws, because in the live
+   layout they leave the room and fly into the board, and an SVG element cannot leave its canvas. */
+.room { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; width: min(100%, 440px); }
+.room__seat {
+  aspect-ratio: 1; display: grid; place-items: center;
+  background: var(--tile); border: 3px solid var(--line);
+  font-family: var(--font-mono); font-size: clamp(0.875rem, 1.5vw, 1.25rem); font-weight: 700; line-height: 1;
+}
+.room__seat[data-stuck] { background: var(--heat-4); color: var(--heat-4-ink); }
+.room__seat[data-stuck]::after { content: "?"; }
+.room__seat[data-asked] { background: var(--yellow); color: var(--on-yellow); }
+.story__board { width: min(100%, 440px); }
+.story__rank { width: min(100%, 520px); }
+
+.story--live { height: 320vh; padding-top: 0; }
+.story--live .story__stage {
+  position: sticky; top: 0; box-sizing: border-box; height: 100vh; height: 100svh;
+  /* The nav is sticky above this at the same top; the padding keeps the stage's content out from under it. */
+  padding-top: 92px; padding-bottom: 24px; align-items: center; overflow: hidden;
+}
+.story--live .story__beat { grid-area: 1 / 1; }
+.story--live .story__fig { align-items: center; justify-items: center; }
+.story--live .room, .story--live .story__board, .story--live .story__rank { grid-area: 1 / 1; }
+/* Seats arrive on top of the tiles they are being counted into. */
+.story--live .room { z-index: 2; }
+.story--live .room__seat { will-change: transform; }
+.story--live .story__rank { justify-self: end; width: min(42%, 420px); }
+.story--live .room { --stuck-p: 0; }
+.story--live .room__seat[data-stuck] {
+  --k: clamp(0, calc((var(--stuck-p) - var(--d, 0) * 0.04) / 0.3), 1);
+  background: color-mix(in oklch, var(--heat-4) calc(var(--k) * 100%), var(--tile));
+  /* The ? is mixed from the tile too, so at zero it is tile-on-tile: there, unreadable, honest. */
+  color: color-mix(in oklch, var(--heat-4-ink) calc(var(--k) * 100%), var(--tile));
+}
+.story--live .story__board { --heat-p: 0; }
+.story--live .story__board .preview__cell {
+  --k: clamp(0, calc((var(--heat-p) - var(--i, 0) * 0.07) / 0.4), 1);
+  background-color: color-mix(in oklch, var(--cell-heat, var(--tile)) calc(var(--k) * 100%), var(--tile));
+  color: color-mix(in oklch, var(--cell-ink, var(--ink)) calc(var(--k) * 100%), var(--ink));
+  transition: none;
+}
 
 .steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
 .step { display: flex; flex-direction: column; gap: 14px; }
@@ -635,12 +719,13 @@ img, svg { display: block; }
 .tile--l { padding: 28px; }
 .tile--l .tile__count strong { font-size: 4.75rem; }
 .tile--l .tile__text { font-size: 1.375rem; line-height: 1.4; }
-.tile--h1 { background: var(--heat-1); color: var(--heat-1-ink); }
-.tile--h2 { background: var(--heat-2); color: var(--heat-2-ink); }
-.tile--h3 { background: var(--heat-3); color: var(--heat-3-ink); }
-.tile--h4 { background: var(--heat-4); color: var(--heat-4-ink); }
-.tile--h5 { background: var(--heat-5); color: var(--heat-5-ink); }
-.tile--answered { background: var(--yellow); color: var(--on-yellow); }
+.tile--h1 { background: var(--heat-1); color: var(--heat-1-ink); --cell-heat: var(--heat-1); --cell-ink: var(--heat-1-ink); }
+.tile--h2 { background: var(--heat-2); color: var(--heat-2-ink); --cell-heat: var(--heat-2); --cell-ink: var(--heat-2-ink); }
+.tile--h3 { background: var(--heat-3); color: var(--heat-3-ink); --cell-heat: var(--heat-3); --cell-ink: var(--heat-3-ink); }
+.tile--h4 { background: var(--heat-4); color: var(--heat-4-ink); --cell-heat: var(--heat-4); --cell-ink: var(--heat-4-ink); }
+.tile--h5 { background: var(--heat-5); color: var(--heat-5-ink); --cell-heat: var(--heat-5); --cell-ink: var(--heat-5-ink); }
+.tile--answered { background: var(--yellow); color: var(--on-yellow); --cell-heat: var(--yellow); --cell-ink: var(--on-yellow); }
+/* --cell-heat / --cell-ink restate each step as a pair the story board can mix from, see .story--live. */
 .tile__top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 /* Relative so the outgoing numeral can ride over the incoming one without being in flow: the
    count roll must not nudge the tile's own layout while it plays. */
@@ -1034,8 +1119,7 @@ img, svg { display: block; }
    only thing hiding anything. Both are stripped once the wave has played, so the finished
    state is plain CSS with no animation left declared over it. Markup with no JS, a hidden tab,
    or reduced motion never gets armed at all and simply renders finished. */
-[data-reveal].reveal-armed .seat-g,
-[data-reveal].reveal-armed .rankfig__bar i { opacity: 0; }
+[data-reveal].reveal-armed .seat-g { opacity: 0; }
 .preview__grid.reveal-armed .preview__cell { background-color: var(--tile); color: var(--ink); }
 
 /* fill-box so each seat scales about its own centre rather than the whole 280x184 canvas. */
@@ -1046,14 +1130,9 @@ img, svg { display: block; }
 }
 @keyframes seat-in { from { opacity: 0; transform: scale(0.55); } }
 
-/* scaleX rather than width: the bar is inside a bordered track, so growing the box would
-   relayout it on every frame for the same picture. */
+/* scaleX rather than width when the story grows a bar: it sits inside a bordered track, so
+   growing the box would relayout it on every frame for the same picture. */
 .rankfig__bar i { transform-origin: left center; }
-[data-reveal].is-revealed .rankfig__bar i {
-  animation: bar-in 560ms var(--ease-pop) backwards;
-  animation-delay: calc(140ms + var(--d, 0) * 90ms);
-}
-@keyframes bar-in { from { transform: scaleX(0); } }
 
 /* The board takes its heat in reading order rather than fading in. Fading was the reflex and
    it was wrong twice: the grid's own background is --line, so every cell that had not arrived
@@ -1078,7 +1157,13 @@ img, svg { display: block; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(170px, auto); }
   .steps { grid-template-columns: 1fr; }
   .band { grid-template-columns: 1fr; gap: 16px; }
-  .roomfig--wide { grid-template-columns: 1fr; }
+  .story__stage { grid-template-columns: 1fr; }
+  /* Shorter runway and the figure first: on one column the caption reads under the picture. */
+  .story--live { height: 220vh; }
+  .story--live .story__stage { grid-template-rows: auto minmax(0, 1fr); padding-top: 84px; align-content: start; row-gap: 24px; }
+  .story--live .story__fig { order: -1; }
+  .story--live .story__copy h2 { font-size: 1.375rem; }
+  .story--live .story__rank { justify-self: center; width: min(100%, 440px); }
   .dash { grid-template-columns: 1fr; }
   .agenda { position: static; }
 }
@@ -1193,6 +1278,9 @@ img, svg { display: block; }
   .roomfig { grid-template-columns: 1fr; }
   .bar { grid-template-columns: minmax(0, 1fr) 52px; }
   .hero__cta .btn { width: 100%; }
+  .prop { width: 44px; height: 44px; font-size: 1.125rem; }
+  .prop--metoo { width: 60px; height: 60px; }
+  .prop--metoo b { font-size: 1.25rem; }
 }
 
 /* Small phones again, and it has to come after the 640 block rather than join the 400 one
@@ -1605,7 +1693,7 @@ img, svg { display: block; }
   .tile--h1, .tile--h2, .tile--h3, .tile--h4, .tile--h5, .tile--answered,
   .legend__step, .preview__cell, .row__heat i, .stat--hue, .bar__fill,
   .num-badge, .waiting__dot, .swatch,
-  .seat, .seat--stuck, .seat--asked, .rankfig__bar i { forced-color-adjust: none; }
+  .seat, .seat--stuck, .seat--asked, .rankfig__bar i, .room__seat, .prop { forced-color-adjust: none; }
   .btn, .tile, .box, .row, .stat, .filters, .composer__field, .legend, .metoo { border-color: CanvasText; }
   :focus-visible { outline-color: Highlight; }
 }

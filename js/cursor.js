@@ -25,11 +25,33 @@
   el.setAttribute('aria-hidden', 'true');
   document.body.appendChild(el);
 
-  /* Over anything that can be pressed the square lets go of the pointer, snaps to the control
-     and opens into a frame around it, tracking the control's own hover lift. Tiles and seats
-     are not controls, so over those it only grows. */
-  var FRAME = 'a, button, [role="button"], [role="switch"], [role="radio"]';
+  /* Over a compact control the square lets go of the pointer, snaps to it and opens into a frame
+     around it, tracking the control's own hover lift.
+
+     Compact is the whole rule, and it is a measurement rather than a list, because the same class
+     is a different object at different sizes. Framing means abandoning the pointer's position,
+     which a cursor exists to report, so it has to buy something back: around an icon button or a
+     Me too it reads as "this one", the way a selection ring does. Around the 236px nav CTA it is
+     just a rectangle sliding about, and around the 119x18 backlink it is a sliver. Thirty
+     controls on one board, all framed, and the square spends the whole page teleporting away
+     from the hand moving it. Everything that fails the test still grows, which keeps the square
+     where the pointer actually is.
+
+     So: frame buttons, grow links and panels. Links are out at every size — a box drawn around a
+     run of text is not a control being picked out, it is a sentence being interrupted, and the
+     line has to be the same for "Feed" and for "Problem & Solution" or one nav row disagrees with
+     itself. Size is the backstop for the handful of buttons big enough to read as surfaces. */
+  var FRAME = 'button, [role="button"], [role="switch"], [role="radio"]';
   var FRAME_PAD = 6;
+  var FRAME_MAX = 200;   /* past this it is a surface, not a control */
+
+  function compact(el) {
+    if (!el) return null;
+    var r = el.getBoundingClientRect();
+    if (!r.width || !r.height) return null;
+    if (r.width > FRAME_MAX || r.height > FRAME_MAX) return null;
+    return el;
+  }
 
   var tx = 0, ty = 0, x = 0, y = 0, scale = 1;
   var raf = 0;
@@ -82,7 +104,7 @@
   document.addEventListener('pointerover', function (e) {
     var t = e.target;
     if (!t || !t.closest) return;
-    var f = t.closest(FRAME);
+    var f = compact(t.closest(FRAME));
     setFrame(f);
     el.classList.toggle('is-over', !f && !!t.closest(INTERACTIVE));
     el.classList.toggle('is-text', !!t.closest(TEXT));

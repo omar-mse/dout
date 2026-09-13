@@ -1018,11 +1018,10 @@ html.has-cursor :is(input, textarea, select, [contenteditable]) { cursor: auto !
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%230b0b0b' stroke-width='3' stroke-linecap='square'%3E%3Cpath d='M5 8l7 7 7-7'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 14px center;
 }
-.field__hint { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.04em; color: var(--ink-soft); }
-.field__hint code { padding: 2px 6px; background: var(--yellow); color: var(--ink-fixed); border: 2px solid var(--ink-fixed); font-weight: 700; }
-.gate__error { color: var(--danger); font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; min-height: 1.4em; }
-.is-shaking { animation: shake 360ms ease; }
-@keyframes shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+/* There is no lock on this gate, so the note under the button is the honest version of what a
+   password field would have implied. Sized as prose rather than as a mono label: it is the one
+   place the demo explains its own limits, and it should read like a sentence. */
+.gate__note { font-size: 0.875rem; line-height: 1.5; color: var(--ink-soft); max-width: 54ch; }
 
 .dash { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 32px; align-items: start; margin-top: 36px; }
 .stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
@@ -1122,7 +1121,7 @@ html.has-cursor :is(input, textarea, select, [contenteditable]) { cursor: auto !
 /* The same question the tiles answer one level down, at subject scale: how much of the week
    is stuck here, relative to the busiest board. */
 .subject__bar { display: block; width: 100%; height: 12px; margin-top: 8px; border: 2px solid var(--line); background: var(--tile); }
-.subject__bar i { display: block; height: 100%; background: var(--hue); }
+.subject__bar i { display: block; height: 100%; background: var(--hue); transform-origin: left center; }
 .subject__stats { font-family: var(--font-mono); font-size: 0.75rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); }
 .subject__stats strong { color: var(--ink); font-size: 0.9375rem; font-variant-numeric: tabular-nums; }
 /* Pinned to the bottom edge so the row of cards ends on one line however long the names run. */
@@ -1778,6 +1777,16 @@ html.has-cursor :is(input, textarea, select, [contenteditable]) { cursor: auto !
 ::view-transition-old(root) { animation-duration: 160ms; animation-timing-function: var(--ease-pop); }
 ::view-transition-new(root) { animation-duration: 240ms; animation-timing-function: var(--ease-pop); }
 ::view-transition-old(pointer), ::view-transition-new(pointer) { animation: none; }
+/* Opening a subject is the one navigation with a spatial answer, so the card's code and name
+   travel into the board's header rather than crossfading with the rest of the page. Named from
+   js/feed.js, on one card at a time and on the header it becomes. */
+::view-transition-group(subject-code), ::view-transition-group(subject-name) {
+  animation-duration: 360ms; animation-timing-function: var(--ease-pop);
+}
+::view-transition-old(subject-code), ::view-transition-new(subject-code),
+::view-transition-old(subject-name), ::view-transition-new(subject-name) {
+  animation-duration: 260ms; animation-timing-function: var(--ease-pop);
+}
 @media (prefers-reduced-motion: reduce) {
   @view-transition { navigation: none; }
 }

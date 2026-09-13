@@ -17,21 +17,17 @@ devices or people yet; the feed says so on the board itself.
 | `index.html` | Landing. First visit gets a seven-step tour, skippable from the first frame. |
 | `feed.html` | Subject picker, then one subject's board: ask, Me too, and the most/newest/answered filters. |
 | `problem.html` | The Problem & Solution write-up and the research behind it. |
-| `professor.html` | Password-gated dashboard: doubts ranked by Me too, replies, next-class agenda. |
+| `professor.html` | Professor dashboard: doubts ranked by Me too, replies, next-class agenda. |
 
 ## The professor dashboard
 
-**The password for each subject is that subject's own name**, in plain words. Case and spacing are
-forgiven; nothing else is. The gate shows the answer under the password box, because this is a demo
-gate rather than authentication and the page does not pretend otherwise.
+**There is no password.** Pick a subject on the gate and it opens; a line under the button says so
+and says why. Every doubt in this build lives in the visitor's own browser, so there is nothing to
+authenticate against, and a lock that stops nobody would claim a protection this does not have. A
+real deployment puts the university's sign-in in that spot.
 
-| Subject | Password |
-|---|---|
-| CSCI 201 · Data Structures | `data structures` |
-| MATH 102 · Calculus II | `calculus ii` |
-| BIOL 130 · Cell Biology | `cell biology` |
-| ECON 220 · Microeconomics | `microeconomics` |
-| PSYC 101 · Intro Psychology | `intro psychology` |
+The session remembers the one subject that was opened rather than a blanket "logged in", so the
+dashboard can only ever show that class. **Lock & switch subject** clears it.
 
 Subjects, course codes and professor display names all come from one place: `SUBJECTS` at the top of
 `js/store.js`. The professor name is what students see above a written reply, so change it there

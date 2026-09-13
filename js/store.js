@@ -16,9 +16,7 @@
   var MAX_COUNT = 999999;
 
   /* The five subjects are fixed: this is a semester's timetable, not user content, so it lives
-     in code rather than storage. The password is the subject name in plain words, matched
-     case- and space-insensitively, because a professor typing their own subject should not
-     have to guess our punctuation. */
+     in code rather than storage. */
   var SUBJECTS = [
     { id: 'cs201', code: 'CSCI 201', name: 'Data Structures',  professor: 'Prof. Rahman' },
     { id: 'ma102', code: 'MATH 102', name: 'Calculus II',      professor: 'Prof. Iyer' },
@@ -34,10 +32,6 @@
     return !!(id && byId[String(id)]);
   }
 
-  /* "Data Structures", "data structures" and "  DATA  STRUCTURES " are the same answer. */
-  function fold(value) {
-    return String(value == null ? '' : value).toLowerCase().replace(/\s+/g, ' ').trim();
-  }
 
   function seedDoubts(id, now) {
     var m = MIN;
@@ -396,15 +390,6 @@
     getSubject: function () {
       var s = byId[currentId];
       return { id: s.id, code: s.code, name: s.name, professor: s.professor };
-    },
-    /* The subject's own name, in plain words, is the password. Case and spacing are forgiven;
-       nothing else is. This is a demo gate, not authentication, and the page says so. */
-    checkPassword: function (id, value) {
-      if (!isSubject(id)) return false;
-      return fold(value) === fold(byId[id].name);
-    },
-    passwordHint: function (id) {
-      return isSubject(id) ? fold(byId[id].name) : '';
     },
 
     /* ---------- the current subject's board ---------- */

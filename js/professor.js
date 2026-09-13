@@ -1,13 +1,14 @@
 /* dout — professor: per-subject gate + dashboard.
-   A professor picks their subject and types its name as the password. The session remembers
-   which subject was unlocked, never a blanket "logged in", so the dashboard can only ever
-   show the one class that key opens. */
+   A professor picks their subject and opens it. There is no password, because there is nothing
+   to authenticate against in a demo that lives in one browser, and a fake lock would claim a
+   protection this build cannot provide; the gate says so in a sentence. The session still
+   remembers which subject was opened, never a blanket "logged in", so the dashboard can only
+   ever show the one class that was chosen. */
 (function () {
   var SESSION_KEY = 'metoo.prof.subject';
   var store = window.MeTooStore;
   var ui = window.MeTooUI;
   var openReply = {};
-  var gateInput = null;
   var gateSelect = null;
 
   /* The unlocked subject id, or '' — validated against the timetable on the way out of
@@ -44,6 +45,26 @@
          key opens, which is the one thing locking was supposed to put away. */
       document.title = 'dout · For professors';
       if (moveFocus && gateSelect) gateSelect.focus();
+    }
+  }
+
+  /* Opening the dashboard replaces the whole screen: the gate's one paragraph becomes a ranked
+     board. The rows arrive in the order they are ranked, which is the order they matter in — the
+     professor watches the class's worst-understood question land first.
+
+     One motion, not two. A view transition across the swap was the reflex and it was wrong: it
+     crossfades the whole page in, and then the stagger plays over rows that have already
+     arrived, so every row animates twice. The stagger is the reveal; the swap underneath it is
+     instant. An addition to a dashboard that is already there and already focused — no API, a
+     hidden tab, or reduced motion simply skips it. */
+  function revealDash() {
+    show(true);
+    if (!ui.wantsMotion()) return;
+    var items = document.querySelectorAll('#stats .stat, #ranked .row, #ranked .ranked-empty');
+    for (var i = 0; i < items.length && i < 14; i += 1) {
+      if (!items[i].animate) break;
+      items[i].animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 440, delay: i * 45, easing: 'cubic-bezier(0.16, 1, 0.3, 1)', fill: 'backwards' });
     }
   }
 
@@ -198,9 +219,6 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     var form = document.getElementById('gate-form');
-    var error = document.getElementById('gate-error');
-    var hintEl = document.getElementById('password-hint');
-    gateInput = document.getElementById('password');
     gateSelect = document.getElementById('subject');
 
     /* Code and name only. A select clips its option text rather than wrapping it, and adding
@@ -210,42 +228,18 @@
       return '<option value="' + ui.esc(s.id) + '">' + ui.esc(s.code + ' · ' + s.name) + '</option>';
     }).join('');
 
-    /* The password is the selected subject's own name, so the hint has to follow the dropdown.
-       A hint frozen on the first subject is worse than no hint: it teaches the wrong key. */
-    function syncHint() {
-      hintEl.innerHTML = '<span aria-hidden="true">→</span> The password is the subject name: <code>' +
-        ui.esc(store.passwordHint(gateSelect.value)) + '</code>';
-    }
-    gateSelect.addEventListener('change', function () {
-      syncHint();
-      error.textContent = '';
-    });
-    syncHint();
-
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var id = gateSelect.value;
-      if (store.checkPassword(id, gateInput.value)) {
-        setUnlocked(id);
-        store.setSubject(id);
-        error.textContent = '';
-        gateInput.value = '';
-        show(true);
-        ui.toast(store.getMeta().code + ' dashboard open.');
-      } else {
-        /* Naming the subject they picked matters here: the commonest miss is the right
-           password typed against the wrong class in the dropdown. */
-        error.textContent = 'That is not the password for ' + store.subjects().filter(function (s) { return s.id === id; }).map(function (s) { return s.code; })[0] + '. The hint is right under the box.';
-        form.classList.remove('is-shaking');
-        void form.offsetWidth;
-        form.classList.add('is-shaking');
-        gateInput.select();
-      }
+      if (!store.isSubject(id)) return;
+      setUnlocked(id);
+      store.setSubject(id);
+      revealDash();
+      ui.toast(store.getMeta().code + ' dashboard open.');
     });
 
     document.getElementById('logout-btn').addEventListener('click', function () {
       setUnlocked('');
-      gateInput.value = '';
       show(true);
     });
 

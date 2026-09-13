@@ -12,7 +12,7 @@
   <script src="js/theme.js"></script>
   <!-- Which of the two panels below this page shows is decided by a session key, and that
        decision has to be made before the first paint. Read at DOMContentLoaded instead, the
-       browser paints the password form and then swaps it for a much taller dashboard, so a
+       browser paints the gate and then swaps it for a much taller dashboard, so a
        professor who unlocked a subject a minute ago watches the gate flash past first. Same
        pattern as theme.js above: read the key synchronously, stamp the root, let CSS act on it.
        js/professor.js keeps the attribute in step from there, so locking still shows the gate. -->
@@ -49,13 +49,8 @@
           <label for="subject">Your subject</label>
           <select id="subject" name="subject" required></select>
         </div>
-        <div class="field">
-          <label for="password">Password</label>
-          <input type="password" id="password" name="password" required autocomplete="current-password" spellcheck="false" aria-describedby="password-hint">
-          <span class="field__hint" id="password-hint"></span>
-        </div>
-        <p class="gate__error" id="gate-error" role="alert"></p>
         <button type="submit" class="btn btn--primary btn--lg">Open dashboard</button>
+        <p class="gate__note">No password — this is a demo, so every subject opens straight away. A real deployment would put your university's sign-in here, and a professor would only ever reach their own class.</p>
       </form>
     </section>
 

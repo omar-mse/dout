@@ -522,7 +522,8 @@
     var reading = s.total
       ? '<strong>' + store.formatCount(s.open) + '</strong> open · <strong>' + store.formatCount(s.meToos) + '</strong> me too' + (s.meToos === 1 ? '' : 's')
       : '<strong>No doubts yet</strong> · be the first to ask';
-    return '<a class="subject' + (s.total ? '' : ' subject--quiet') + '" href="feed.html?subject=' + encodeURIComponent(s.id) + '">' +
+    return '<a class="subject' + (s.total ? '' : ' subject--quiet') + '" data-subject="' + ui.esc(s.id) + '"' +
+      ' href="feed.html?subject=' + encodeURIComponent(s.id) + '">' +
       '<span class="subject__code">' + ui.esc(s.code) + '</span>' +
       '<h2 class="subject__name">' + ui.esc(s.name) + '</h2>' +
       '<span class="subject__prof">' + ui.esc(s.professor) + '</span>' +
@@ -541,6 +542,113 @@
     document.getElementById('picker-note').innerHTML = ui.icons.lock +
       '<span>Nothing you post is tied to a name, in any subject. Professors see questions and counts, never people. ' +
       'Every board in this demo lives in this browser only.</span>';
+  }
+
+  /* The picker is the first screen of the product and everything on it is a count: the share
+     bar against the busiest board, the open doubts, the me toos. So it arrives the way the rest
+     of the site does — cards in reading order, bars growing from the left, numbers climbing to
+     what the room actually said. First paint only, and only when somebody is looking: a repaint
+     driven by another tab's me too must not replay this, and a hidden tab never advances an
+     animation, so an unwatched picker is painted finished instead. */
+  var pickerRevealed = false;
+
+  function revealPicker() {
+    if (pickerRevealed || stillness() || document.hidden) return;
+    pickerRevealed = true;
+    var cards = document.querySelectorAll('.subject');
+    cards.forEach(function (card, i) {
+      if (!card.animate) return;
+      var at = i * 70;
+      card.animate([{ opacity: 0, transform: 'translateY(16px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 460, delay: at, easing: EASE, fill: 'backwards' });
+      var bar = card.querySelector('.subject__bar i');
+      if (bar && bar.animate) {
+        bar.animate([{ transform: 'scaleX(0)' }, { transform: 'none' }],
+          { duration: 560, delay: at + 140, easing: EASE, fill: 'backwards' });
+      }
+      card.querySelectorAll('.subject__stats strong').forEach(function (n) { tickUp(n, 700, at + 140); });
+    });
+  }
+
+  /* Counts climb from nothing. Only plain digits take part: "No doubts yet" is a sentence, and
+     the compact form the store uses past 10,000 is not a number this can count to. The text it
+     lands on is the text it started with, so nothing here can leave a wrong figure on screen. */
+  function tickUp(el, ms, delay) {
+    var text = el.textContent;
+    var final = parseInt(text, 10);
+    if (!(final > 0) || String(final) !== text.trim()) return;
+    el.textContent = '0';
+    var t0 = 0;
+    function step(now) {
+      if (!t0) t0 = now + delay;
+      if (now < t0) { requestAnimationFrame(step); return; }
+      var p = Math.min(1, (now - t0) / ms);
+      el.textContent = p < 1 ? String(Math.round(final * (1 - Math.pow(1 - p, 3)))) : text;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- picker ↔ board, as one move ----------
+     Opening a subject is the one navigation on this site with a spatial answer: the card you
+     pressed carries the same code and the same name as the header you land on. Naming both ends
+     hands them to the browser as one object, so the card travels into the header instead of the
+     page dissolving and redrawing it. It works in both directions, because coming back is the
+     same relationship read the other way.
+
+     Pure enhancement, and deliberately quiet about failure: no cross-document view transitions,
+     no navigation API, or reduced motion, and the link is an ordinary link to an ordinary page. */
+  function subjectFromHref(href) {
+    var m = /[?&]subject=([^&#]*)/.exec(String(href || ''));
+    if (!m) return '';
+    try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+  }
+
+  function nameParts(id) {
+    /* On the board there is one header and it is always the subject in play. On the picker it is
+       whichever card this transition is about, so an id has to say which. */
+    var code = id ? document.querySelector('.subject[data-subject="' + id + '"] .subject__code')
+                  : document.getElementById('course');
+    var name = id ? document.querySelector('.subject[data-subject="' + id + '"] .subject__name')
+                  : document.getElementById('subject-title');
+    if (code) code.style.viewTransitionName = 'subject-code';
+    if (name) name.style.viewTransitionName = 'subject-name';
+    return function () {
+      if (code) code.style.viewTransitionName = '';
+      if (name) name.style.viewTransitionName = '';
+    };
+  }
+
+  function wireMorph() {
+    if (stillness() || !window.navigation) return;
+    var onBoard = !!subjectFromUrl();
+
+    window.addEventListener('pageswap', function (e) {
+      if (!e.viewTransition) return;
+      var to = e.activation && e.activation.entry ? e.activation.entry.url : '';
+      /* Leaving the board for anywhere else that is not a board: hand the header over. Leaving
+         the picker: hand over the card for the subject being opened, if it is one of ours. */
+      if (onBoard) { if (!subjectFromHref(to)) nameParts(''); return; }
+      var id = subjectFromHref(to);
+      if (id && store.isSubject(id)) nameParts(id);
+    });
+
+    window.addEventListener('pagereveal', function (e) {
+      if (!e.viewTransition) return;
+      var from = window.navigation.activation && window.navigation.activation.from
+        ? window.navigation.activation.from.url : '';
+      var clear;
+      if (onBoard) {
+        /* Arriving at a board from the picker rather than from anywhere else. */
+        if (!subjectFromHref(from)) clear = nameParts('');
+      } else {
+        var id = subjectFromHref(from);
+        if (id && store.isSubject(id)) clear = nameParts(id);
+      }
+      /* Names are per-document and have to be unique, so a name left behind would take part in
+         whatever transition comes next and animate alone against nothing. */
+      if (clear) e.viewTransition.finished.then(clear, clear);
+    });
   }
 
   /* ---------- board ---------- */
@@ -614,6 +722,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     var picker = document.getElementById('picker');
     var boardEl = document.getElementById('board');
+    wireMorph();
 
     if (store.setSubject(subjectFromUrl())) {
       boardEl.hidden = false;
@@ -623,6 +732,7 @@
 
     picker.hidden = false;
     renderPicker();
+    revealPicker();
     /* The nav's Ask button and the landing page both point at #ask. Arriving here with no
        subject chosen is not an error, but it is a question the page has to answer: which
        class are you asking in. Say so rather than dropping them on a silent list. */

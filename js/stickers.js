@@ -18,20 +18,25 @@
 
   /* The contents of img/stickers/, written out rather than fetched: a directory listing or an
      index.json would need fetch(), which fails on file://, and opening index.html straight off
-     disk has to keep working. Drop a file in that folder and add its name here. */
+     disk has to keep working. Drop a file in that folder and add its name here.
+
+     WebP, quality 95 with the alpha channel kept lossless: 1257 KB of PNG became 368 KB for
+     artwork that is pixel-for-pixel the same to look at. No PNG fallback, because there is no
+     browser that can render this site and not this format — the heat ramp is built on
+     color-mix(in oklch), which lands years after WebP in every engine that has both. */
   var SHEET = [
-    '011157a377c2cd6e68792ef967a820e4.png', '053902a2b3b51a523711e6eb26123c93.png',
-    '27f1593b9087eb75e662f8180c5baf86.png', '2ae72ace922f6fc2a2faca086dc7926d.png',
-    '367679d9b5af2e0c6ca8ee808fe02bc8.png', '3af8c8306e33f78b16f48fe4dff1a600.png',
-    '3ec65433d30589ba1e938715684c24fd.png', '435d0297061246e16abccd0157972b10.png',
-    '575f5a1dfe98d0375f8df74c84cbf723.png', '5b649816c387d3466daf024a7fe31d05.png',
-    '5bdc064011f2efd71395bc5cc2034906.png', '60351a7d039e5ab251593b562e7876d6.png',
-    '6410c31ca07dc5b68c16bcc9ffbcac7f.png', '7e7e7037207112dc817906c433949eec.png',
-    '900cbb9fe1a6b4333ea329888ea746ef.png', '926efa3490e86f565a9b801f865a6183.png',
-    'a08784a906b2a822eaf11c9e93b5ddfe.png', 'cd2414b91aa0aa31864e6ae01248b44e.png',
-    'd14c3cae7081231aa3c81cc46868ff45.png', 'df6b5d3597af48a7df09b520870b68bb.png',
-    'e258a2af5a3644b40973d7f434fe5d1b.png', 'f519bd864b389e958de5e6a90ed3184a.png',
-    'f59f829c272b2da1a04575b1d2945954.png'
+    '011157a377c2cd6e68792ef967a820e4.webp', '053902a2b3b51a523711e6eb26123c93.webp',
+    '27f1593b9087eb75e662f8180c5baf86.webp', '2ae72ace922f6fc2a2faca086dc7926d.webp',
+    '367679d9b5af2e0c6ca8ee808fe02bc8.webp', '3af8c8306e33f78b16f48fe4dff1a600.webp',
+    '3ec65433d30589ba1e938715684c24fd.webp', '435d0297061246e16abccd0157972b10.webp',
+    '575f5a1dfe98d0375f8df74c84cbf723.webp', '5b649816c387d3466daf024a7fe31d05.webp',
+    '5bdc064011f2efd71395bc5cc2034906.webp', '60351a7d039e5ab251593b562e7876d6.webp',
+    '6410c31ca07dc5b68c16bcc9ffbcac7f.webp', '7e7e7037207112dc817906c433949eec.webp',
+    '900cbb9fe1a6b4333ea329888ea746ef.webp', '926efa3490e86f565a9b801f865a6183.webp',
+    'a08784a906b2a822eaf11c9e93b5ddfe.webp', 'cd2414b91aa0aa31864e6ae01248b44e.webp',
+    'd14c3cae7081231aa3c81cc46868ff45.webp', 'df6b5d3597af48a7df09b520870b68bb.webp',
+    'e258a2af5a3644b40973d7f434fe5d1b.webp', 'f519bd864b389e958de5e6a90ed3184a.webp',
+    'f59f829c272b2da1a04575b1d2945954.webp'
   ];
 
   var MAX = 60;        /* a wall, not a swarm; also keeps the record inside the storage quota */
@@ -145,7 +150,9 @@
     el.type = 'button';
     el.className = 'sticker';
     el.tabIndex = open ? 0 : -1;
-    el.innerHTML = '<img src="' + DIR + esc(SHEET[rec.k]) + '" alt="" draggable="false">';
+    /* A placed sticker is on the page the moment it is drawn, so this one loads straight away —
+       unlike the tray's swatches, which wait for the sheet to be opened (see fillTray). */
+    el.innerHTML = '<img src="' + DIR + esc(SHEET[rec.k]) + '" alt="" draggable="false" decoding="async">';
     label(rec, el);
     place(rec, el);
 
@@ -412,6 +419,9 @@
     document.documentElement.setAttribute('data-stickers', open ? 'edit' : 'off');
     layer.setAttribute('aria-hidden', open ? 'false' : 'true');
     if (open) {
+      /* Before it is unhidden, never after: the swatches carry their filename in data-src until
+         this runs, and the sheet must not be on screen for a frame holding empty boxes. */
+      fillTray();
       tray.hidden = false;
       /* Same rule as the tour: only animate a sheet the visitor can actually watch arrive. */
       if (!stillness() && document.visibilityState !== 'hidden') {
@@ -528,11 +538,28 @@
     placeSheet(currentPos(), true);
   }
 
+  /* The sheet is built at boot because half this file needs it to exist — wireTray binds to it,
+     placeSheet measures it, the resize handler keeps it inside the viewport — but its artwork is
+     the heaviest thing on the site and most visitors never open it. So the swatches are written
+     with the filename parked in data-src and no src at all, and fillTray promotes them the first
+     time the sheet is actually opened.
+
+     Not loading="lazy": that defers an image in a display:none subtree in Chrome and Firefox but
+     is an engine heuristic rather than a promise, and this has to behave the same everywhere,
+     file:// included. An <img> with no src makes no request anywhere. */
+  function fillTray() {
+    var imgs = tray.querySelectorAll('img[data-src]');
+    for (var i = 0; i < imgs.length; i += 1) {
+      imgs[i].src = imgs[i].getAttribute('data-src');
+      imgs[i].removeAttribute('data-src');
+    }
+  }
+
   function buildTray() {
     var items = SHEET.map(function (file, i) {
       return '<li><button type="button" class="tray__item" data-k="' + i + '" ' +
         'aria-label="Add sticker ' + (i + 1) + '">' +
-        '<img src="' + DIR + esc(file) + '" alt="" draggable="false"></button></li>';
+        '<img data-src="' + DIR + esc(file) + '" alt="" draggable="false" decoding="async"></button></li>';
     }).join('');
 
     var el = document.createElement('div');
@@ -662,6 +689,12 @@
       'stroke="currentColor" stroke-width="2.4" stroke-linecap="square" stroke-linejoin="miter" ' +
       'aria-hidden="true"><path d="M4 4h16v10l-6 6H4z"/><path d="M20 14h-6v6"/></svg>';
     trayBtn.addEventListener('click', function () { setOpen(!open); });
+    /* Reaching for the button is the first honest signal that the artwork is about to be wanted,
+       and it arrives a few hundred milliseconds before the click does. Warming here means the
+       sheet opens onto stickers rather than onto empty swatches, while a visitor who never goes
+       near it still pays nothing. fillTray only ever has work to do once. */
+    trayBtn.addEventListener('pointerenter', fillTray);
+    trayBtn.addEventListener('focus', fillTray);
 
     /* Next to the theme control, because it is the same kind of thing: a per-browser preference
        about how this site looks. Falls back to floating on its own if the nav never rendered. */

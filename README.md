@@ -47,6 +47,7 @@ one subject's seeded doubts and leaves the other four alone.
 | `js/theme.js` | Palette and dark mode. Loaded synchronously in `<head>` so the theme never flashes. |
 | `js/ui.js` | Shared nav, theme popover, toast, scroll reveal. |
 | `js/landing.js` · `js/feed.js` · `js/professor.js` | One per page. |
+| `js/cursor.js` | The pointer: the favicon's yellow-in-black square following a fine pointer. Touch, reduced motion and text fields keep the system cursor. |
 | `js/hero.js` · `js/story.js` | Landing only: the hero's load-in and the scroll-driven story after it. Both are additions to a finished page — no JS, reduced motion or a hidden tab gets the same page, still. |
 | `js/vendor/` | GSAP 3.15.0 and ScrollTrigger, unmodified, under GreenSock's standard licence. |
 | `js/stickers.js` | Drag-and-drop sticker layer behind the page (landing and feed only). |

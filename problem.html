@@ -55,7 +55,7 @@
           </ul>
           <p class="ps-lede"><strong>What we asked our own cohort.</strong> The three studies above are the evidence. We also put the same three questions to our own class by show of hands, to check that the effect shows up in our lecture hall too.</p>
 
-          <div class="survey" aria-labelledby="survey-title">
+          <div class="survey" aria-labelledby="survey-title" data-reveal>
             <div class="survey__title">
               <h3 id="survey-title" class="survey__h">In-class sample &middot; 42 students</h3>
               <span class="kicker muted">informal &middot; show of hands</span>
@@ -63,21 +63,21 @@
             <div class="bar">
               <div>
                 <div class="bar__label">Had a question in a lecture this month they never asked</div>
-                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="width:79%"></div></div>
+                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="--d:0;width:79%"></div></div>
               </div>
               <div class="bar__value">79%</div>
             </div>
             <div class="bar">
               <div>
                 <div class="bar__label">Assumed most of the room had understood when they had not</div>
-                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="width:61%"></div></div>
+                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="--d:1;width:61%"></div></div>
               </div>
               <div class="bar__value">61%</div>
             </div>
             <div class="bar">
               <div>
                 <div class="bar__label">Would have asked if it had been anonymous</div>
-                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="width:88%"></div></div>
+                <div class="bar__track" aria-hidden="true"><div class="bar__fill" style="--d:2;width:88%"></div></div>
               </div>
               <div class="bar__value">88%</div>
             </div>
@@ -134,5 +134,6 @@
 
   <script src="js/store.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/cursor.js"></script>
 </body>
 </html>

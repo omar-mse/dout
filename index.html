@@ -27,11 +27,16 @@
             <span class="prop prop--seat" style="--r:5deg;--dy:4px"></span>
           </span>
         </div>
-        <h1 class="hero__title" id="hero-title">Half the room has the same question.</h1>
+        <!-- One span per word so the load-in can raise them in turn; the h1's text, and so its
+             accessible name, is exactly what it was. -->
+        <h1 class="hero__title" id="hero-title"><span class="hero__word">Half</span> <span class="hero__word">the</span> <span class="hero__word">room</span> <span class="hero__word">has</span> <span class="hero__word">the</span> <span class="hero__word">same</span> <span class="hero__word">question.</span></h1>
         <div class="hero__row">
           <p class="hero__flag">Nobody asks it.</p>
           <span class="hero__props" aria-hidden="true">
             <span class="prop prop--metoo" style="--r:4deg;--dy:-8px"><b>31</b><small>me too</small></span>
+            <!-- The pointer that taps the prop once the hero has arrived (js/hero.js). Decoration:
+                 hidden at rest, only ever shown for the length of that one gesture. -->
+            <span class="tapper"></span>
           </span>
         </div>
         <p class="hero__lede">Every subject gets its own board. Ask your professor anonymously, and everyone else says <strong>ME TOO</strong> with one tap. The professor sees where the lecture lost the room, and how many people it lost.</p>
@@ -39,6 +44,9 @@
           <a class="btn btn--primary btn--lg" href="feed.html#ask">Ask anonymously</a>
           <a class="btn btn--lg" href="feed.html">Browse subjects</a>
         </div>
+        <!-- Real doubts from the busiest board, filled by landing.js. At rest the top one shows;
+             with motion they take turns. Never announced: aria-live is off. -->
+        <div class="ticker" data-ticker aria-live="off"><ul class="ticker__list"></ul></div>
       </div>
 
       <div class="preview" role="group" aria-labelledby="preview-caption">
@@ -148,6 +156,7 @@
   <script src="js/vendor/ScrollTrigger.min.js"></script>
   <script src="js/store.js"></script>
   <script src="js/ui.js"></script>
+  <script src="js/cursor.js"></script>
   <script src="js/landing.js"></script>
   <script src="js/hero.js"></script>
   <script src="js/story.js"></script>

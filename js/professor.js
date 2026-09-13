@@ -95,7 +95,47 @@
     }).join('\n');
   }
 
+  /* Every repaint of the ranked list goes through a FLIP: measure where each row was, paint,
+     put each row back with a transform and release it. A reply box opening pushes the rows
+     under it down as a slide rather than a jump; closing it slides them back; a reopened doubt
+     climbing the ranking is seen climbing. First paint has nothing to measure and paints
+     straight, as does a hidden tab or a professor who asked for less motion. */
   function render() {
+    var ranked = document.getElementById('ranked');
+    if (!ranked || !ui.wantsMotion()) { paint(); return; }
+    var before = Object.create(null);
+    ranked.querySelectorAll('.row[data-id]').forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      before[el.dataset.id] = r.top;
+    });
+    paint();
+    ranked.querySelectorAll('.row[data-id]').forEach(function (el) {
+      var was = before[el.dataset.id];
+      if (was === undefined || !el.animate) return;
+      var dy = was - el.getBoundingClientRect().top;
+      if (Math.abs(dy) < 1) return;
+      el.animate([{ transform: 'translateY(' + dy + 'px)' }, { transform: 'none' }],
+        { duration: 420, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+    });
+  }
+
+  /* The box is new DOM on every open, so it arrives rather than pops. */
+  function arrive(el) {
+    if (!el || !el.animate || !ui.wantsMotion()) return;
+    el.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 220, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' });
+  }
+
+  /* The colour arrives: tile to yellow over the row, then the class comes off so no finished
+     animation is left declared over it. Only when someone is looking, for the usual reason. */
+  function settleAnswered(id) {
+    var row = document.querySelector('#ranked .row[data-id="' + id + '"]');
+    if (!row || !ui.wantsMotion()) return;
+    row.classList.add('is-just-answered');
+    setTimeout(function () { row.classList.remove('is-just-answered'); }, 320);
+  }
+
+  function paint() {
     var meta = store.getMeta();
     document.title = 'dout · ' + meta.title;
     document.getElementById('course').textContent = meta.code + ' · ' + meta.professor;
@@ -265,6 +305,7 @@
         openReply[t.dataset.openReply] = true;
         render();
         var field = document.getElementById('reply-' + t.dataset.openReply);
+        arrive(field && field.closest('.row__reply'));
         if (field) field.focus();
       }
       else if (t.dataset.cancelReply) {
@@ -287,6 +328,7 @@
         store.reply(id, text);
         delete openReply[id];
         render();
+        settleAnswered(id);
         var saved = ranked.querySelector('[data-open-reply="' + id + '"]');
         if (saved) saved.focus();
         ui.toast('Reply posted. Students see it now.');
@@ -294,6 +336,7 @@
       else if (t.dataset.answered) {
         store.setAnswered(t.dataset.answered, true);
         render();
+        settleAnswered(t.dataset.answered);
         /* The professor should know what the room actually sees, since it is not their words. */
         var marked = store.getDoubts().filter(function (x) { return x.id === t.dataset.answered; })[0];
         ui.toast(marked && marked.reply ? 'Marked answered.' : 'Marked answered. Students see "covered in class".');

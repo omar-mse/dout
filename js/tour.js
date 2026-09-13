@@ -174,7 +174,10 @@
     document.documentElement.removeAttribute('data-tour');
     /* Hand focus to the thing the tour was about, not back to the top of the document. */
     var cta = document.querySelector('.hero__cta .btn--primary');
-    if (cta) cta.focus();
+    /* preventScroll: the hero is a full screen now, and scrolling the button into view would
+       drop a first-time visitor 300px down the page with the headline cut off, right as it
+       plays in. The button is on screen already. */
+    if (cta) cta.focus({ preventScroll: true });
     else if (lastFocus && lastFocus.focus) lastFocus.focus();
   }
 

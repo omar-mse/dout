@@ -455,8 +455,9 @@ img, svg { display: block; }
 /* ---------- Hero (landing) ---------- */
 
 .hero { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 4vw, 56px); align-items: center; padding-top: clamp(40px, 6vw, 72px); }
-.hero__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 28px; }
+.hero__copy { display: flex; flex-direction: column; align-items: flex-start; gap: 22px; }
 .hero__title { font-size: clamp(2.75rem, 6.6vw, 6rem); line-height: 0.92; }
+.hero__word { display: inline-block; }
 .hero__flag {
   display: inline-block; padding: 10px 18px; background: var(--hue); color: #ffffff;
   font-family: var(--font-display); font-size: clamp(1.625rem, 3.9vw, 3.5rem); text-transform: uppercase; line-height: 1; letter-spacing: -0.01em;
@@ -471,7 +472,7 @@ img, svg { display: block; }
    rather than lined up. Fully painted at rest — js/hero.js flies them in on load when motion is
    wanted and hands the transform back to this rule when it is done. */
 .hero__row { display: flex; align-items: center; flex-wrap: wrap; gap: 20px; }
-.hero__props { display: inline-flex; align-items: center; gap: 14px; }
+.hero__props { position: relative; display: inline-flex; align-items: center; gap: 14px; }
 .prop {
   display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
   width: 56px; height: 56px; background: var(--tile); color: var(--ink);
@@ -483,6 +484,53 @@ img, svg { display: block; }
 .prop--metoo { width: 78px; height: 78px; background: var(--yellow); color: var(--on-yellow); box-shadow: var(--shadow); }
 .prop--metoo b { font-size: 1.75rem; font-variant-numeric: tabular-nums; }
 .prop--metoo small { font-size: 0.5625rem; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* Real doubts, one line at a time. Every item is in the markup; at rest only the first shows,
+   which is the finished state. js/hero.js adds --live and takes them in turns. */
+.ticker {
+  width: 100%; max-width: 600px; background: var(--tile); border: var(--border); box-shadow: var(--shadow-sm);
+  font-family: var(--font-mono); font-size: 0.8125rem; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.ticker__list { list-style: none; margin: 0; padding: 0; }
+.ticker__item { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; padding: 0 14px; }
+.ticker__item + .ticker__item { display: none; }
+.ticker__q { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ticker__q::before { content: "\25B8\00a0"; }
+.ticker__n { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; }
+.ticker__n small { margin-left: 6px; font-size: 0.5625rem; font-weight: 400; letter-spacing: 0.1em; color: var(--ink-soft); }
+.ticker--live .ticker__list { position: relative; height: 44px; overflow: hidden; }
+.ticker--live .ticker__item { display: flex; position: absolute; inset: 0; }
+
+/* ---------- Pointer ----------
+   The favicon as a cursor: yellow inside a black border, with a one-pixel cream ring so it
+   still reads on the dark ground. js/cursor.js moves it and hides the system pointer, but only
+   for a fine pointer with motion allowed; everyone else keeps the arrow they came with. The
+   tapper is the same square, parked over the me-too prop for the hero's one demo tap. */
+.cursor, .tapper {
+  box-sizing: border-box; width: 18px; height: 18px;
+  background: var(--yellow); border: 3px solid var(--ink-fixed); box-shadow: 0 0 0 1px var(--paper-fixed);
+  pointer-events: none;
+}
+.cursor {
+  position: fixed; left: 0; top: 0; z-index: 1000; opacity: 0; will-change: transform;
+  /* Sized through two variables so the frame state can take the size of whatever it wraps. */
+  width: var(--w, 18px); height: var(--h, 18px);
+  margin: calc(var(--h, 18px) / -2) 0 0 calc(var(--w, 18px) / -2);
+  transition: width 160ms var(--ease-pop), height 160ms var(--ease-pop), margin 160ms var(--ease-pop),
+    background-color 160ms ease, border-color 160ms ease, opacity 160ms ease;
+}
+.cursor.is-on { opacity: 1; }
+.cursor.is-over { --w: 28px; --h: 28px; }
+/* Around a button or link the square opens into a frame: hollow, so the control shows through,
+   and drawn in difference blend so one white stroke reads on every surface it can land on —
+   ink on the ground, cream on the nav bar, deep blue on a yellow button, gold on a hue tile.
+   Square corners, like everything else here. js/cursor.js sets --w and --h from the control. */
+.cursor.is-frame { background: transparent; border-color: #ffffff; box-shadow: none; mix-blend-mode: difference; }
+/* Over a field the system I-beam comes back and the square steps aside. */
+.cursor.is-text { opacity: 0; }
+html.has-cursor, html.has-cursor * { cursor: none !important; }
+html.has-cursor :is(input, textarea, select, [contenteditable]) { cursor: auto !important; }
+.tapper { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; display: none; z-index: 2; }
 
 .preview { display: flex; flex-direction: column; gap: 14px; }
 .preview__grid {
@@ -776,7 +824,6 @@ img, svg { display: block; }
 .tile.is-pumping { animation: pump 420ms var(--ease-pop); }
 @keyframes pump { 0% { transform: scale(1); } 40% { transform: scale(1.035); } 100% { transform: scale(1); } }
 
-.tile.is-new { animation: rise 500ms var(--ease-pop) both; }
 @keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Capped, because --i is the raw index and PAGE is 120: uncapped, the last tile of a busy
@@ -988,6 +1035,11 @@ img, svg { display: block; }
 .ranked { display: flex; flex-direction: column; gap: 16px; margin-top: 28px; }
 .row { display: grid; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); gap: 20px; padding: 20px; background: var(--tile); border: var(--border); box-shadow: var(--shadow-sm); }
 .row--answered { background: var(--yellow); color: var(--on-yellow); }
+/* Added by js/professor.js for one pass after a row is marked answered, then removed. */
+/* Short on purpose: a tile-to-yellow crossfade spends its middle on a muddy olive, the same
+   thing agenda-in above works around, so this one is over before the eye settles on it. */
+.row.is-just-answered { animation: row-answered 240ms var(--ease-pop) both; }
+@keyframes row-answered { from { background-color: var(--tile); color: var(--ink); } }
 .row__count { font-family: var(--font-mono); font-size: 2.75rem; font-weight: 700; line-height: 0.9; font-variant-numeric: tabular-nums; }
 .row__count small { display: block; margin-top: 8px; font-size: 0.625rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 400; }
 .row__body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -1120,6 +1172,7 @@ img, svg { display: block; }
    state is plain CSS with no animation left declared over it. Markup with no JS, a hidden tab,
    or reduced motion never gets armed at all and simply renders finished. */
 [data-reveal].reveal-armed .seat-g { opacity: 0; }
+[data-reveal].reveal-armed .bar__fill { transform: scaleX(0); }
 .preview__grid.reveal-armed .preview__cell { background-color: var(--tile); color: var(--ink); }
 
 /* fill-box so each seat scales about its own centre rather than the whole 280x184 canvas. */
@@ -1129,6 +1182,15 @@ img, svg { display: block; }
   animation-delay: calc(var(--d, 0) * 26ms);
 }
 @keyframes seat-in { from { opacity: 0; transform: scale(0.55); } }
+
+/* The survey's three bars grow from the left as they come into view: scaleX over the inline
+   width, so the proportion is laid out once and only painted growing. */
+.bar__fill { transform-origin: left center; }
+[data-reveal].is-revealed .bar__fill {
+  animation: bar-grow 600ms var(--ease-pop) backwards;
+  animation-delay: calc(120ms + var(--d, 0) * 110ms);
+}
+@keyframes bar-grow { from { transform: scaleX(0); } }
 
 /* scaleX rather than width when the story grows a bar: it sits inside a bordered track, so
    growing the box would relayout it on every frame for the same picture. */
@@ -1150,6 +1212,12 @@ img, svg { display: block; }
    heat crossfade it would otherwise inherit, because this one answers a pointer. */
 .preview__cell--empty { transition: background-color 160ms ease, color 160ms ease; }
 .preview__cell--empty:hover, .preview__cell--empty:focus-visible { background: var(--yellow); color: var(--on-yellow); }
+
+/* On a wide screen the hero is the first screen: one viewport minus the 75px nav, with the
+   story starting exactly one scroll below. Stacked, it is taller than a screen anyway. */
+@media (min-width: 1101px) {
+  .hero { min-height: calc(100vh - 75px); min-height: calc(100svh - 75px); align-content: center; padding-block: 28px 32px; }
+}
 
 @media (max-width: 1100px) {
   .hero { grid-template-columns: 1fr; }
@@ -1693,9 +1761,25 @@ img, svg { display: block; }
   .tile--h1, .tile--h2, .tile--h3, .tile--h4, .tile--h5, .tile--answered,
   .legend__step, .preview__cell, .row__heat i, .stat--hue, .bar__fill,
   .num-badge, .waiting__dot, .swatch,
-  .seat, .seat--stuck, .seat--asked, .rankfig__bar i, .room__seat, .prop { forced-color-adjust: none; }
+  .seat, .seat--stuck, .seat--asked, .rankfig__bar i, .room__seat, .prop, .cursor, .tapper { forced-color-adjust: none; }
   .btn, .tile, .box, .row, .stat, .filters, .composer__field, .legend, .metoo { border-color: CanvasText; }
   :focus-visible { outline-color: Highlight; }
+}
+
+/* ---------- Page transitions ----------
+   Four pages, one site: moving between them crossfades instead of cutting to white, and the
+   nav is named so it is carried across as the same object rather than redrawn. Nothing here
+   is required for navigation — a browser without cross-document view transitions simply
+   navigates — and the whole thing is switched off for anyone who asked for less motion. The
+   pointer is named too, so its old position is not ghosted into the outgoing frame. */
+@view-transition { navigation: auto; }
+.nav { view-transition-name: nav; }
+.cursor { view-transition-name: pointer; }
+::view-transition-old(root) { animation-duration: 160ms; animation-timing-function: var(--ease-pop); }
+::view-transition-new(root) { animation-duration: 240ms; animation-timing-function: var(--ease-pop); }
+::view-transition-old(pointer), ::view-transition-new(pointer) { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  @view-transition { navigation: none; }
 }
 
 /* Held for exactly the frame a theme or palette swap lands in (see instantly() in js/theme.js).

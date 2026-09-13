@@ -196,6 +196,62 @@
 
   var EASE = 'cubic-bezier(0.16, 1, 0.3, 1)';
 
+  /* FLIP for the whole board, shared by every reflow it makes: a Me too pushing a tile into the
+     next band, a filter switch, the next page of doubts, a doubt just posted, another tab's tap.
+     Measure where every tile was, let the layout change, put each one back where it started
+     with a transform, then release it. Transforms only, so the browser lays out once and the
+     animation runs on the compositor rather than re-running layout every frame.
+
+     Every measurement first, then every animation: one layout pass for the whole board instead
+     of one per tile. A tile that was not on the board before rises in the way the entrance
+     stagger rises, capped so a filter that brings in a hundred tiles does not stage a parade. */
+  function measureTiles() {
+    var before = Object.create(null);
+    grid.querySelectorAll('.tile').forEach(function (el) {
+      var r = el.getBoundingClientRect();
+      before[el.dataset.id] = { x: r.left, y: r.top };
+    });
+    return before;
+  }
+
+  function playMoves(before, arrivalsToo) {
+    var moves = [];
+    var arrivals = [];
+    grid.querySelectorAll('.tile').forEach(function (el) {
+      if (!el.animate) return;
+      var was = before[el.dataset.id];
+      if (!was) { if (arrivalsToo) arrivals.push(el); return; }
+      var r = el.getBoundingClientRect();
+      var dx = was.x - r.left, dy = was.y - r.top;
+      /* Sub-pixel drift is not movement; animating it would only cost a compositor layer. */
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+      moves.push([el, dx, dy]);
+    });
+    moves.forEach(function (m) {
+      m[0].animate([
+        { transform: 'translate(' + m[1] + 'px, ' + m[2] + 'px)' },
+        { transform: 'none' }
+      ], { duration: 460, easing: EASE });
+    });
+    arrivals.slice(0, 24).forEach(function (el, i) {
+      el.animate([
+        { opacity: 0, transform: 'translateY(18px)' },
+        { opacity: 1, transform: 'none' }
+      ], { duration: 500, delay: i * 30, easing: EASE, fill: 'backwards' });
+    });
+    return moves.length > 0;
+  }
+
+  /* Wraps a repaint so the board slides into its new arrangement instead of teleporting.
+     Straight repaint when motion is off, when nobody is looking (a hidden tab never advances
+     an animation), and while the entrance stagger still owns the tiles. */
+  function flip(mutate) {
+    if (stillness() || document.hidden || !grid.classList.contains('is-settled')) { mutate(); return; }
+    var before = measureTiles();
+    mutate();
+    playMoves(before, true);
+  }
+
   /* The count is the product's whole argument and it used to change by teleporting. It rolls
      now: the old value leaves in the direction the number is travelling and the new one arrives
      from behind it, so "fourteen became fifteen" is something a student watches happen rather
@@ -272,13 +328,8 @@
        at most PAGE tiles while the lecture can hold MAX_DOUBTS, so the old loop searched the
        DOM 400 times to touch 120 elements on every tap. */
     var els = Object.create(null);
-    var before = Object.create(null);
-    grid.querySelectorAll('.tile').forEach(function (el) {
-      els[el.dataset.id] = el;
-      if (!moving) return;
-      var r = el.getBoundingClientRect();
-      before[el.dataset.id] = { x: r.left, y: r.top };
-    });
+    grid.querySelectorAll('.tile').forEach(function (el) { els[el.dataset.id] = el; });
+    var before = moving ? measureTiles() : null;
     all.forEach(function (d) {
       var el = els[d.id];
       if (!el || d.answered) return;
@@ -292,26 +343,7 @@
     if (alsoMutate) alsoMutate();
     renderLegend();
     if (!moving) return false;
-
-    /* Every measurement first, then every animation: one layout pass for the whole board
-       instead of one per tile. */
-    var moves = [];
-    grid.querySelectorAll('.tile').forEach(function (el) {
-      var was = before[el.dataset.id];
-      if (!was || !el.animate) return;
-      var r = el.getBoundingClientRect();
-      var dx = was.x - r.left, dy = was.y - r.top;
-      /* Sub-pixel drift is not movement; animating it would only cost a compositor layer. */
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
-      moves.push([el, dx, dy]);
-    });
-    moves.forEach(function (m) {
-      m[0].animate([
-        { transform: 'translate(' + m[1] + 'px, ' + m[2] + 'px)' },
-        { transform: 'none' }
-      ], { duration: 460, easing: EASE });
-    });
-    return moves.length > 0;
+    return playMoves(before, false);
   }
 
   function hintSeen() {
@@ -395,21 +427,18 @@
     textarea.value = '';
     counter.textContent = '0';
     dismissHint();
-    if (filter === 'answered') setFilter('top'); else { shownLimit = PAGE; render(); }
+    /* One flip for the whole move: the filter buttons switch, the board slides down to make
+       room, and the doubt just written rises into the gap as an arrival. flip() itself skips the
+       motion when nobody is looking, so a post from a background tab paints straight — the one
+       tile you most need to see must never sit transparent waiting for a frame that never comes. */
+    flip(function () {
+      if (filter === 'answered') { filter = 'top'; syncFilterButtons(); }
+      shownLimit = PAGE;
+      render();
+    });
     renderNotice();
     var el = grid.querySelector('[data-id="' + d.id + '"]');
     if (el) {
-      /* Same rule the board entrance follows: `rise` is declared with fill `both`, so its
-         backwards fill paints the tile transparent and 18px low until the animation actually
-         runs, and a hidden tab never advances it. Measured: post from a background tab and the
-         doubt you just wrote sits at opacity 0, offset 18px, for as long as the tab stays
-         hidden — the one tile you most need to see. Animate only when somebody is looking, and
-         drop the class once it has played so a finished animation is not left declared over
-         the tile for the rest of the session. */
-      if (!document.hidden) {
-        el.classList.add('is-new');
-        setTimeout(function () { el.classList.remove('is-new'); }, 560);
-      }
       /* It now sits at the top of the board, so it is usually on screen already. Move the page
          the smallest amount that brings it fully into view, and never far enough to take the
          composer with it; scrolling away from what you just did was the old valley. */
@@ -430,16 +459,20 @@
   /* Three buttons where exactly one can be on is a radio group, not three toggles. That
      brings the keyboard contract with it: one tab stop for the set, arrows to move within
      it, and the moved-to option selected. */
-  function setFilter(f, focusIt) {
-    filter = f;
-    shownLimit = PAGE;
+  function syncFilterButtons(focusIt) {
     document.querySelectorAll('.filters__btn').forEach(function (b) {
-      var on = b.dataset.filter === f;
+      var on = b.dataset.filter === filter;
       b.setAttribute('aria-checked', on ? 'true' : 'false');
       b.tabIndex = on ? 0 : -1;
       if (on && focusIt) b.focus();
     });
-    render();
+  }
+
+  function setFilter(f, focusIt) {
+    filter = f;
+    shownLimit = PAGE;
+    syncFilterButtons(focusIt);
+    flip(render);
   }
 
   function onFilterKey(e) {
@@ -555,7 +588,7 @@
       if (e.target.closest('[data-empty-all]')) { setFilter('top'); return; }
       if (e.target.closest('[data-more]')) {
         shownLimit += PAGE;
-        render();
+        flip(render);
         /* Land on the first tile that was not there a moment ago, not back at the top. */
         var next = grid.querySelectorAll('.tile')[shownLimit - PAGE];
         if (next) { next.setAttribute('tabindex', '-1'); next.focus({ preventScroll: true }); }
@@ -570,7 +603,7 @@
     /* Another tab asked or answered. Repaint rather than sit on a board that is no longer true. */
     document.addEventListener('metoo:change', function (e) {
       if (!e.detail || !e.detail.external) return;
-      render();
+      flip(render);
       renderNotice();
     });
 

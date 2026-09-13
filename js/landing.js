@@ -13,6 +13,7 @@
   }
 
   var revealed = false;
+  var tickered = false;
 
   function render() {
     var grids = document.querySelectorAll('[data-live-board]');
@@ -35,6 +36,17 @@
     var href = subject ? 'feed.html?subject=' + encodeURIComponent(subject.id) + '#ask' : 'feed.html#ask';
     html += '<a class="preview__cell preview__cell--empty" href="' + href + '" style="--i:8;text-decoration:none;color:inherit">Your<br>doubt</a>';
     grids.forEach(function (grid) { grid.innerHTML = html; });
+    /* The ticker takes the same doubts once, on the first paint: js/hero.js is animating those
+       nodes from then on, and a count that is one behind for a moment is better than a line
+       that vanishes mid-turn. */
+    var tick = document.querySelector('[data-ticker] .ticker__list');
+    if (tick && !tickered) {
+      tickered = true;
+      tick.innerHTML = doubts.filter(function (d) { return !d.answered; }).slice(0, 6).map(function (d) {
+        return '<li class="ticker__item"><span class="ticker__q" dir="auto">' + ui.esc(d.text) + '</span>' +
+          '<span class="ticker__n">' + store.formatCount(d.count) + '<small>me too</small></span></li>';
+      }).join('');
+    }
     /* Only the first paint earns the entrance, and only the hero's board gets one: the story's
        takes its heat from the scroll (js/story.js). When js/hero.js is live it fires the reveal
        itself at the right beat of the load-in. A repaint driven by another tab's me too must
